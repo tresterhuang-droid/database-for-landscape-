@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>區段徵收地圖｜台灣浪潮協會</title>
+<meta name="description" content="台灣浪潮協會整理的全台區段徵收案件地圖：已完成、執行中、審議中與規劃中的案件進度、爭議與時間軸。">
+<link rel="stylesheet" href="vendor/leaflet.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE  公共研究平台：冷靜、可查證，像一份攤開的調查圖冊
+   IDEA   地籍調查圖冊：左頁是測繪圖，右頁是案件登記簿
+   PICTURE 以墨線繪出的台灣與縣市界，案件以印記圓點標示，大小對應徵收面積
+   COLOUR 白紙與墨色為底；印泥紅標示執行中，赭、藍、灰、綠區分其他進度
+   TYPE   Noto Serif TC 作標題，Noto Sans TC 作內文；LAYOUT 地圖與登記簿左右並置，窄螢幕上下堆疊 */
+:root{color-scheme:light dark;
+--bg:light-dark(#fdfdfb,#121417);--ink:light-dark(#16181d,#e8e6e1);--mute:light-dark(#5f636b,#a3a6ad);
+--line:light-dark(#d9d8d3,#2c3036);--sea:light-dark(#eef2f4,#171c22);--land:light-dark(#ffffff,#1d2127);
+--card:light-dark(#f6f5f1,#1a1e23);
+--s-run:#b3261e;--s-rev:#b7791f;--s-plan:#2f5d8a;--s-done:light-dark(#6b6f76,#8d9198);--s-stop:#3f7d4e}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.7 "Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;overflow-x:clip}
+h1,h2,h3{font-family:"Noto Serif TC","Songti TC",serif;line-height:1.2;text-wrap:balance;margin:0}
+a{color:inherit;text-underline-offset:3px}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--s-plan);outline-offset:2px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;padding:20px max(3vw,16px) 16px;border-bottom:1px solid var(--line)}
+.brand{font-size:13px;color:var(--mute);letter-spacing:.04em}
+.brand a{text-decoration:none}
+h1{font-size:clamp(28px,3.4vw,40px)}
+.lede{margin:6px 0 0;color:var(--mute);font-size:15px;max-width:46em}
+.tally{display:flex;gap:18px;flex-wrap:wrap;font-size:14px}
+.tally b{display:block;font-size:26px;font-family:"Noto Serif TC",serif;line-height:1.1}
+main{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);height:calc(100vh - 118px);min-height:560px}
+.map{position:relative;background:var(--sea);border-right:1px solid var(--line);overflow:hidden}
+#map{position:absolute;inset:0;background:var(--sea);font:inherit}
+.leaflet-container{background:var(--sea);font-family:inherit}
+.leaflet-tooltip{font:14px/1.4 inherit;border-radius:4px}
+.leaflet-control-attribution{font-size:11px}
+.layers{position:absolute;right:12px;top:64px;z-index:500;width:min(320px,calc(100% - 24px));max-height:calc(100% - 140px);overflow:auto;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 14px 12px;display:none;box-shadow:0 6px 24px rgba(0,0,0,.12)}
+.layers.open{display:block}
+.layers h4{font-family:"Noto Serif TC",serif;font-size:15px;margin:12px 0 4px}
+.lyr{display:grid;grid-template-columns:22px 1fr;gap:6px;padding:6px 0;cursor:pointer;align-items:start}
+.lyr input{width:18px;height:18px;margin:3px 0 0}
+.lyr b{font-weight:500;font-size:15px}.lyr small{display:block;color:var(--mute);font-size:13px;line-height:1.5}
+.lyr em{display:block;font-style:normal;color:var(--s-run);font-size:12px}
+.lyrnote{font-size:13px;color:var(--mute);margin:2px 0 0;line-height:1.6}
+.tools{position:absolute;right:56px;top:10px;z-index:500;display:flex;gap:6px}
+.tools button{height:44px;padding:0 14px;border:1px solid var(--line);background:var(--bg);font-size:14px;border-radius:6px}
+.leaflet-top.leaflet-right{top:0}
+.legend{position:absolute;z-index:500;left:12px;bottom:12px;background:color-mix(in srgb,var(--bg) 92%,transparent);border:1px solid var(--line);border-radius:6px;padding:8px 12px;font-size:13px;line-height:1.6}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:0}
+.panel{display:flex;flex-direction:column;overflow:hidden}
+.bar{padding:12px 20px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
+.bar input{width:100%;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:var(--land);color:var(--ink)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:none;border-radius:999px;padding:6px 12px;font-size:14px;min-height:36px;display:inline-flex;align-items:center;gap:6px}
+.chip[aria-pressed=true]{border-color:var(--ink)}.chip[aria-pressed=false]{opacity:.45;text-decoration:line-through}
+.chip i{width:9px;height:9px;border-radius:50%}
+.scrollpane{overflow-y:auto;flex:1;padding:0 20px 40px}
+.list{list-style:none;margin:0;padding:0}
+.list li button{width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);padding:14px 0;display:grid;grid-template-columns:12px 1fr auto;gap:4px 12px;align-items:baseline}
+.list li button:hover .nm{text-decoration:underline}
+.list .sw{width:10px;height:10px;border-radius:50%;align-self:center}
+.nm{font-weight:700}.meta{grid-column:2/4;color:var(--mute);font-size:14px}
+.st{font-size:13px;color:var(--mute);white-space:nowrap}
+.intro{padding:20px 0 8px}
+.intro h2,.detail h2{font-size:26px;margin-bottom:10px}
+.intro p{margin:0 0 12px}
+.law{border-left:2px solid var(--line);margin:14px 0;padding:2px 0 2px 14px;font-size:15px}
+.law b{font-family:"Noto Serif TC",serif}
+.sec{font-family:"Noto Serif TC",serif;font-size:17px;margin:26px 0 8px;padding-top:14px;border-top:1px solid var(--line)}
+.back{background:none;border:0;padding:14px 0 6px;color:var(--mute);font-size:14px;min-height:44px}
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:500;padding:2px 10px;border-radius:999px;color:#fff}
+.facts{display:grid;grid-template-columns:auto 1fr;gap:4px 16px;font-size:15px;margin:14px 0 0}
+.facts dt{color:var(--mute)}.facts dd{margin:0}
+.tl{list-style:none;margin:6px 0 0;padding:0;position:relative}
+.tl:before{content:"";position:absolute;left:5.5px;top:8px;bottom:8px;width:1px;background:var(--line)}
+.tl li{position:relative;padding:0 0 14px 26px}
+.tl li:before{content:"";position:absolute;left:0;top:7px;width:12px;height:12px;border-radius:50%;background:var(--bg);border:2px solid var(--mute)}
+.tl li.t-司法:before{border-color:var(--s-plan)}.tl li.t-衝突:before{border-color:var(--s-run);background:var(--s-run)}
+.tl li.t-預定:before{border-style:dashed}
+.tl time{font-variant-numeric:tabular-nums;font-weight:700;font-size:14px;white-space:nowrap}
+.tl .ty{font-size:12px;color:var(--mute);margin-left:8px}
+.tl p{margin:2px 0 0;font-size:15px}
+.view{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin-top:8px}
+.view small{display:block;color:var(--mute);font-size:13px;margin-bottom:6px}
+.view p{margin:0;font-size:15px}
+.src{font-size:14px;padding-left:1.2em;margin:6px 0 0}.src li{margin-bottom:4px}
+.empty{color:var(--mute);padding:24px 0}
+footer{padding:14px max(3vw,16px);border-top:1px solid var(--line);font-size:13px;color:var(--mute);display:flex;flex-wrap:wrap;gap:6px 20px;justify-content:space-between}
+@media(max-width:860px){
+main{grid-template-columns:1fr;height:auto}
+.map{height:62vh;min-height:380px;border-right:0;border-bottom:1px solid var(--line)}
+.panel{overflow:visible}.scrollpane{overflow:visible}
+.legend{display:none}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="brand"><a href="https://waveintaiwan.com">台灣浪潮協會 Wave in Taiwan</a>　城鄉觀測</div>
+    <h1>區段徵收地圖</h1>
+    <p class="lede">一次徵收整片土地、重劃後再發還部分給地主：這是台灣城市擴張最常用、也最具爭議的開發工具。我們把各地案件放回地圖與時間裡。</p>
+  </div>
+  <div class="tally" id="tally"></div>
+</header>
+
+<main>
+  <section class="map" aria-label="台灣區段徵收案件地圖">
+    <div id="map"></div>
+    <div class="tools">
+      <button id="lyrbtn" aria-label="圖層" title="圖層">圖層</button>
+      <button id="zreset" aria-label="回到全台" title="回到全台">全台</button>
+    </div>
+    <div class="layers" id="layers"></div>
+    <div class="legend" id="legend"></div>
+  </section>
+
+  <section class="panel" aria-label="案件登記簿">
+    <div class="bar">
+      <input id="q" type="search" placeholder="搜尋案件、縣市或關鍵字" aria-label="搜尋案件">
+      <div class="chips" id="chips"></div>
+    </div>
+    <div class="scrollpane" id="pane"></div>
+  </section>
+</main>
+
+<footer>
+  <span>資料整理：台灣浪潮協會　｜　最後更新：<span id="upd"></span></span>
+  <span>事實層依公開報導、政府文件與判決整理；「浪潮觀點」為協會評析，與事實陳述分開標示。發現錯誤或有補充資料，歡迎來信指正。</span>
+</footer>
+
+<script src="vendor/leaflet.js"></script>
+<script src="geo.js"></script>
+<script src="bounds.js"></script>
+<script src="data.js"></script>
+<script src="config.js"></script>
+<script>
+{
+const STATUS = [
+  {k:'執行中', c:'var(--s-run)', d:'已公告徵收，拆遷、工程或配地進行中'},
+  {k:'審議中', c:'var(--s-rev)', d:'都市計畫或徵收計畫審議中'},
+  {k:'規劃中', c:'var(--s-plan)', d:'政策已提出，尚在規劃或公聽階段'},
+  {k:'完成',   c:'var(--s-done)', d:'區段徵收與配地已完成'},
+  {k:'中止',   c:'var(--s-stop)', d:'遭駁回或撤案'}
+];
+const col = s => (STATUS.find(x => x.k === s) || STATUS[3]).c;
+const probe = document.createElement('i'); probe.style.display = 'none'; document.body.appendChild(probe);
+const rc = v => { probe.style.color = v; return getComputedStyle(probe).color; };
+const esc = v => String(v ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+const safeUrl = u => /^https?:\/\//i.test(u || '') ? u : '#';
+const fmtArea = a => a ? Number(a).toLocaleString('zh-TW', {maximumFractionDigits: 2}) + ' 公頃' : '—';
+
+let CASES = window.WAVE_CASES || [], EVENTS = window.WAVE_EVENTS || [];
+const cfg = window.WAVE_CONFIG || {};
+let active = new Set(STATUS.map(s => s.k)), query = '', current = null;
+
+/* ---------- CSV（Google 試算表後台） ---------- */
+function parseCSV(text) {
+  const rows = []; let row = [], f = '', q = false;
+  text = text.replace(/^﻿/, '');
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i+1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
+    else if (c === '"') q = true;
+    else if (c === ',') { row.push(f); f = ''; }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && text[i+1] === '\n') i++; row.push(f); rows.push(row); row = []; f = ''; }
+    else f += c;
+  }
+  if (f || row.length) { row.push(f); rows.push(row); }
+  const head = rows.shift().map(h => h.trim());
+  return rows.filter(r => r.some(x => x.trim())).map(r => Object.fromEntries(head.map((h, i) => [h, (r[i] || '').trim()])));
+}
+async function loadSheet() {
+  if (!cfg.casesCsv || !cfg.eventsCsv) return false;
+  try {
+    const [a, b] = await Promise.all([cfg.casesCsv, cfg.eventsCsv].map(u => fetch(u).then(r => { if (!r.ok) throw 0; return r.text(); })));
+    const cs = parseCSV(a).filter(c => c.id && c.lat && c.lng).map(c => ({...c, lat:+c.lat, lng:+c.lng, area: c.area ? +c.area : null,
+      sources: (c.sources || '').split('\n').map(l => { const p = l.split('|'); return {t: p[0].trim(), u: (p[1] || '').trim()}; }).filter(s => s.t)}));
+    const ev = parseCSV(b).filter(e => e.case && e.date);
+    if (cs.length) { CASES = cs; EVENTS = ev; return true; }
+  } catch (e) {}
+  return false;
+}
+
+/* ---------- 地圖 ---------- */
+const NLSC = id => `https://wmts.nlsc.gov.tw/wmts/${id}/default/GoogleMapsCompatible/{z}/{y}/{x}`;
+const NLSC_ATTR = '圖資：內政部國土測繪中心';
+const map = L.map('map', {zoomControl: false, minZoom: 7, maxZoom: 18, zoomSnap: 0.5, attributionControl: true})
+  .fitBounds([[21.85, 119.3], [25.35, 122.05]]);
+map.attributionControl.setPrefix(false);
+L.control.zoom({position: 'topright', zoomInTitle: '放大', zoomOutTitle: '縮小'}).addTo(map);
+map.createPane('bounds').style.zIndex = 410;
+map.createPane('dots').style.zIndex = 420;
+
+const LAYERS = [
+  {id:'vector', kind:'base', name:'簡化縣市圖', desc:'網站內建的向量底圖，不依賴外部服務。', make: () => L.geoJSON(WAVE_GEO, {interactive:false, style:{color: rc('var(--line)'), weight:0.8, fillColor: rc('var(--land)'), fillOpacity:1}})},
+  {id:'EMAP', kind:'base', name:'臺灣通用電子地圖', desc:'道路、地名與行政界，適合定位案件周邊環境。', make: () => L.tileLayer(NLSC('EMAP'), {maxZoom:18, attribution:NLSC_ATTR})},
+  {id:'PHOTO2', kind:'base', name:'正射影像', desc:'航拍影像。可直接看到聚落、農田與已整地的區塊。', make: () => L.tileLayer(NLSC('PHOTO2'), {maxZoom:18, attribution:NLSC_ATTR})},
+  {id:'LUIMAP', kind:'over', name:'國土利用現況調查', desc:'農業、建築、交通等現況使用。對照徵收範圍內原本是農地還是聚落。', make: () => L.tileLayer(NLSC('LUIMAP'), {maxZoom:18, opacity:.65, attribution:NLSC_ATTR})},
+  {id:'LAND_OPENDATA', kind:'over', name:'公有土地', desc:'公有地分布。《土地徵收條例》要求優先使用無使用計畫的公有地，這一層可以檢驗選址。', make: () => L.tileLayer(NLSC('LAND_OPENDATA'), {maxZoom:18, opacity:.75, attribution:NLSC_ATTR})},
+  {id:'LANDSECT', kind:'over', name:'地段界（段籍圖）', desc:'地籍「段」的範圍。區段徵收完成後多會重編新段，放大可看到新舊地段的交界。', make: () => L.tileLayer(NLSC('LANDSECT'), {maxZoom:18, opacity:.85, attribution:NLSC_ATTR})},
+  {id:'Village', kind:'over', name:'村里界', desc:'受影響的村里與社區範圍。', make: () => L.tileLayer(NLSC('Village'), {maxZoom:18, opacity:.8, attribution:NLSC_ATTR})}
+];
+const layerObj = {}, layerOn = new Set(['vector']), layerErr = new Set();
+function layer(id) {
+  if (!layerObj[id]) {
+    const d = LAYERS.find(x => x.id === id); layerObj[id] = d.make();
+    layerObj[id].on && layerObj[id].on('tileerror', () => { if (!layerErr.has(id)) { layerErr.add(id); renderLayers(); } });
+  }
+  return layerObj[id];
+}
+function setLayer(id, on) {
+  const d = LAYERS.find(x => x.id === id);
+  if (d.kind === 'base' && on) LAYERS.filter(x => x.kind === 'base' && x.id !== id).forEach(x => { layerOn.delete(x.id); if (layerObj[x.id]) map.removeLayer(layerObj[x.id]); });
+  on ? (layerOn.add(id), layer(id).addTo(map)) : (layerOn.delete(id), layerObj[id] && map.removeLayer(layerObj[id]));
+  if (d.kind === 'base') layer(id).bringToBack && layer(id).bringToBack();
+  try { localStorage.setItem('wave-layers', JSON.stringify([...layerOn])); } catch (e) {}
+  renderLayers();
+}
+function renderLayers() {
+  const row = d => `<label class="lyr"><input type="${d.kind === 'base' ? 'radio' : 'checkbox'}" name="${d.kind}" value="${d.id}" ${layerOn.has(d.id) ? 'checked' : ''}>
+    <span><b>${d.name}</b>${layerErr.has(d.id) ? '<em>此環境無法載入，正式網站會顯示</em>' : ''}<small>${d.desc}</small></span></label>`;
+  document.getElementById('layers').innerHTML =
+    `<h4>底圖</h4>${LAYERS.filter(d => d.kind === 'base').map(row).join('')}
+     <h4>比較圖層</h4>${LAYERS.filter(d => d.kind === 'over').map(row).join('')}
+     <h4>徵收範圍</h4><p class="lyrnote">${BOUNDS.features.length ? `已收錄 ${BOUNDS.features.length} 案範圍。實線為官方範圍，虛線為依計畫圖數化或示意。` : '官方範圍圖資整理中。目前以點位標示，點大小對應徵收面積。'}</p>`;
+  document.querySelectorAll('#layers input').forEach(i => i.onchange = () => setLayer(i.value, i.checked));
+}
+document.getElementById('lyrbtn').onclick = () => document.getElementById('layers').classList.toggle('open');
+
+let BOUNDS = window.WAVE_BOUNDS || {type:'FeatureCollection', features:[]};
+const boundLayer = L.geoJSON(null, {pane:'bounds',
+  style: f => ({color: rc(col(caseOf(f.properties.case)?.status)), weight: 2, fillOpacity: .22, fillColor: rc(col(caseOf(f.properties.case)?.status)), dashArray: f.properties.precision === '官方範圍' ? null : '6 5'}),
+  onEachFeature: (f, l) => l.on('click', () => go(f.properties.case))}).addTo(map);
+const caseOf = id => CASES.find(c => c.id === id);
+const boundOf = id => BOUNDS.features.find(f => f.properties.case === id);
+
+const radius = a => a ? Math.max(6, Math.min(24, Math.sqrt(a) * 0.45)) : 6;
+const dotLayer = L.layerGroup().addTo(map);
+let markers = {};
+function drawDots() {
+  dotLayer.clearLayers(); markers = {};
+  boundLayer.clearLayers(); boundLayer.addData(BOUNDS);
+  [...CASES].sort((a, b) => radius(b.area) - radius(a.area)).forEach(c => {
+    const m = L.circleMarker([c.lat, c.lng], {pane:'dots', radius: radius(c.area), color:'#fff', weight:1.5, fillColor: rc(col(c.status)), fillOpacity:.85})
+      .bindTooltip(`${c.name}（${c.status}）`, {direction:'top', offset:[0, -4]})
+      .on('click', () => go(c.id));
+    m.addTo(dotLayer); markers[c.id] = m;
+  });
+  styleDots();
+}
+function styleDots() {
+  const vis = new Set(filtered().map(c => c.id));
+  for (const [id, m] of Object.entries(markers)) {
+    const on = id === current, show = vis.has(id);
+    m.setStyle({fillOpacity: show ? .85 : .12, opacity: show ? 1 : .3, color: on ? rc('var(--ink)') : '#fff', weight: on ? 3 : 1.5});
+    if (on) m.bringToFront();
+  }
+}
+function zoomTo(c) {
+  const b = boundOf(c.id);
+  if (b) map.flyToBounds(L.geoJSON(b).getBounds(), {padding:[40, 40], duration:.7, maxZoom:16});
+  else map.flyTo([c.lat, c.lng], layerOn.has('vector') ? 10.5 : 14, {duration:.7});
+}
+document.getElementById('zreset').onclick = () => map.flyToBounds([[21.85, 119.3], [25.35, 122.05]], {duration:.5});
+new ResizeObserver(() => map.invalidateSize()).observe(document.getElementById('map'));
+let saved = null; try { saved = JSON.parse(localStorage.getItem('wave-layers')); } catch (e) {}
+(saved && saved.length ? saved : ['vector']).forEach(id => LAYERS.some(d => d.id === id) && setLayer(id, true));
+if (![...layerOn].some(id => LAYERS.find(d => d.id === id).kind === 'base')) setLayer('vector', true);
+
+/* ---------- 篩選與列表 ---------- */
+function filtered() {
+  const q = query.toLowerCase();
+  return CASES.filter(c => active.has(c.status) && (!q || [c.name, c.county, c.summary, c.agency, c.controversy].join(' ').toLowerCase().includes(q)));
+}
+function renderChrome() {
+  const n = s => CASES.filter(c => c.status === s).length;
+  document.getElementById('tally').innerHTML =
+    `<div><b>${CASES.length}</b>案件</div>` + ['執行中','審議中','規劃中'].map(s => `<div><b>${n(s)}</b>${s}</div>`).join('');
+  document.getElementById('legend').innerHTML = STATUS.map(s => `<div><i style="background:${s.c}"></i>${s.k}</div>`).join('');
+  document.getElementById('chips').innerHTML = STATUS.map(s =>
+    `<button class="chip" data-s="${s.k}" aria-pressed="${active.has(s.k)}" title="${esc(s.d)}"><i style="background:${s.c}"></i>${s.k} ${n(s.k)}</button>`).join('');
+  document.querySelectorAll('.chip').forEach(b => b.onclick = () => {
+    const s = b.dataset.s; active.has(s) ? active.delete(s) : active.add(s);
+    if (!active.size) STATUS.forEach(x => active.add(x.k));
+    renderChrome(); styleDots(); if (!current) renderHome();
+  });
+  document.getElementById('upd').textContent = cfg.updated || '';
+}
+const order = s => STATUS.findIndex(x => x.k === s);
+function listHTML() {
+  const rows = filtered().sort((a, b) => order(a.status) - order(b.status) || b.lat - a.lat);
+  if (!rows.length) return '<p class="empty">沒有符合條件的案件。</p>';
+  return '<ul class="list">' + rows.map(c => `<li><button data-id="${esc(c.id)}">
+    <span class="sw" style="background:${col(c.status)}"></span><span class="nm">${esc(c.name)}</span><span class="st">${esc(c.status)}</span>
+    <span class="meta">${esc(c.county)}　${esc(fmtArea(c.area))}　${esc(c.period)}</span></button></li>`).join('') + '</ul>';
+}
+function renderHome() {
+  const pane = document.getElementById('pane');
+  pane.innerHTML = `<div class="intro">
+    <h2>區段徵收是什麼</h2>
+    <p>政府將一定範圍內的私有土地全部徵收，重新規劃道路、公園等公共設施後，把一部分建築用地以「抵價地」發還原地主（法定原則為徵收總面積的50%，最低不得少於40%），其餘土地由政府標售、標租或設定地上權，用以支應開發成本。</p>
+    <p>支持者視之為不必動用大量預算就能完成整體開發的工具；批評者則指出，它讓地方政府同時成為規劃者、徵收者與土地出售者，開發收益的誘因可能使「公益性」與「必要性」的審查流於形式。</p>
+    <div class="law"><b>2011年12月</b>　大埔、相思寮事件後，立法院修正《土地徵收條例》，改採市價補償，並要求徵收前評估社會、經濟、文化生態與永續等公益性因素；民間要求的聽證制度未被納入。</div>
+    <div class="law"><b>2023年6月</b>　台北高等行政法院在航空城案判決9名居民勝訴，指審議小組未實質審查公益性與必要性。</div>
+    <div class="law"><b>2026年5月</b>　航空城被徵收居民聲請憲法審查，挑戰區段徵收、先行區段徵收與土地、改良物分開徵收等規定。</div>
+    <h3 class="sec">案件登記簿</h3></div>` + listHTML();
+  bindList();
+}
+function bindList() { document.querySelectorAll('.list button').forEach(b => b.onclick = () => go(b.dataset.id)); }
+
+/* ---------- 案件頁 ---------- */
+function renderCase(c) {
+  const ev = EVENTS.filter(e => e.case === c.id).sort((a, b) => String(a.date).localeCompare(String(b.date)));
+  const pane = document.getElementById('pane');
+  pane.innerHTML = `<button class="back" id="back">← 全部案件</button>
+  <article class="detail">
+    <h2>${esc(c.name)}</h2>
+    <span class="badge" style="background:${col(c.status)}">${esc(c.status)}</span>
+    <dl class="facts">
+      <dt>縣市</dt><dd>${esc(c.county)}</dd>
+      <dt>面積</dt><dd>${esc(fmtArea(c.area))}${c.area_note ? '<br><span style="color:var(--mute);font-size:14px">' + esc(c.area_note) + '</span>' : ''}</dd>
+      <dt>主辦</dt><dd>${esc(c.agency || '—')}</dd>
+      <dt>期間</dt><dd>${esc(c.period || '—')}</dd>
+      <dt>範圍</dt><dd>${(b => b ? `${esc(b.properties.precision)}：<a href="${esc(safeUrl(b.properties.url))}" target="_blank" rel="noopener">${esc(b.properties.source)}</a>${b.properties.area_ha ? '（圖面計算約 ' + esc(fmtArea(b.properties.area_ha)) + '）' : ''}` : '<span style="color:var(--mute)">官方範圍圖資待補，地圖以點位示意</span>')(boundOf(c.id))}</dd>
+    </dl>
+    <h3 class="sec">進度</h3><p>${esc(c.summary)}</p>
+    <h3 class="sec">爭議與各方說法</h3><p>${esc(c.controversy || '資料待補。')}</p>
+    <h3 class="sec">時間軸</h3>
+    ${ev.length ? '<ol class="tl">' + ev.map(e => `<li class="t-${esc(e.type)}"><time>${esc(e.date)}</time><span class="ty">${esc(e.type)}</span>
+      <p>${e.url ? `<a href="${esc(safeUrl(e.url))}" target="_blank" rel="noopener">${esc(e.title)}</a>` : esc(e.title)}</p></li>`).join('') + '</ol>' : '<p class="empty">時間軸資料待補。</p>'}
+    ${c.wave_view ? `<h3 class="sec">浪潮觀點</h3><div class="view"><small>協會評析，非事實陳述</small><p>${esc(c.wave_view)}</p></div>` : ''}
+    <h3 class="sec">資料來源</h3>
+    <ol class="src">${(c.sources || []).map(s => `<li><a href="${esc(safeUrl(s.u))}" target="_blank" rel="noopener">${esc(s.t)}</a></li>`).join('')}</ol>
+  </article>`;
+  document.getElementById('back').onclick = () => { location.hash = ''; };
+  pane.scrollTop = 0;
+}
+
+/* ---------- 路由（#案件代碼） ---------- */
+function go(id) { if (location.hash.slice(1) === id) route(); else location.hash = id; }
+function route() {
+  const id = decodeURIComponent(location.hash.slice(1));
+  const c = CASES.find(x => x.id === id);
+  current = c ? c.id : null;
+  if (c) { renderCase(c); zoomTo(c); if (matchMedia('(max-width:860px)').matches) document.getElementById('pane').scrollIntoView({behavior:'smooth'}); }
+  else renderHome();
+  styleDots();
+}
+addEventListener('hashchange', route);
+document.getElementById('q').addEventListener('input', e => { query = e.target.value.trim(); styleDots(); if (current) location.hash = ''; else renderHome(); });
+
+function start() { renderChrome(); renderLayers(); drawDots(); route(); }
+start();
+loadSheet().then(ok => { if (ok) start(); });
+}
+</script>
+</body>
+</html>
