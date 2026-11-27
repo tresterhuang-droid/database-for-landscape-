@@ -26,5 +26,11 @@ const out = { type: 'FeatureCollection', features: feats.map(f => {
   const geometry = { type: 'MultiPolygon', coordinates: polys };
   return { type: 'Feature', properties: { name: f.name, status: f.status, county: f.county, source: f.src, url: f.url, case: links[f.county + '|' + f.name] || null, area_ha: Math.round(area({ type: 'Feature', geometry }) / 100) / 100 }, geometry };
 }) };
+// 桃園：由桃園市都市計畫地理資訊服務網圖層計算（見 tools/taoyuan-gis.js）
+const ty = require('./taoyuan-gis.js');
+const TYSRC = '桃園市都市計畫地理資訊服務網', TYURL = 'https://urplanning.tycg.gov.tw/gisMap/';
+out.features.push({ type: 'Feature', properties: { name: '桃園航空城（機場園區及附近地區第一、二期）', status: '辦理中', county: '桃園市', source: TYSRC + '：「都市計畫區範圍」中航空城特定區與二期範圍，扣除「航空城剔除區段徵收地區」', url: TYURL, case: 'aerotropolis', precision: '官方圖資計算', area_ha: ty.aero.area, note: '以桃園市政府圖層計算，結果約 3,160 公頃（簡化前 3,146.5 公頃），與官方公告區徵面積 3,148 公頃相符；非地籍分割成果。' }, geometry: ty.aero.geometry });
+const tyNames = { d0: '大園都市計畫區段徵收地區', d1: '中壢老街溪兩側都市更新第一期', d3: '中路地區整體開發', d4: '中壢運動公園生活園區（中壢平鎮部分）', d5: '中壢運動公園生活園區（龍岡部分）', d6: '機場捷運A21站周邊（中壢平鎮部分）', d7: '機場捷運A21站周邊（中內壢交流道特定區部分）' };
+for (const [k, n] of Object.entries(tyNames)) if (ty[k]) out.features.push({ type: 'Feature', properties: { name: n, status: '都市計畫指定以區段徵收開發', county: '桃園市', source: TYSRC + '「整體開發地區」：' + ty[k].name, url: TYURL, case: null, area_ha: ty[k].area }, geometry: ty[k].geometry });
 fs.writeFileSync(path.join(__dirname, '../data/official.geojson'), JSON.stringify(out));
 for (const f of out.features) console.log(f.properties.county, f.properties.name, f.properties.status, f.properties.area_ha + 'ha', f.properties.case || '');

@@ -320,7 +320,7 @@ document.getElementById('lyrbtn').onclick = () => document.getElementById('layer
 
 let BOUNDS = window.WAVE_BOUNDS || {type:'FeatureCollection', features:[]};
 const boundLayer = L.geoJSON(null, {pane:'bounds',
-  style: f => ({color: rc(col(caseOf(f.properties.case)?.status)), weight: 2, fillOpacity: .22, fillColor: rc(col(caseOf(f.properties.case)?.status)), dashArray: f.properties.precision === '官方範圍' ? null : '6 5'}),
+  style: f => ({color: rc(col(caseOf(f.properties.case)?.status)), weight: 2, fillOpacity: .22, fillColor: rc(col(caseOf(f.properties.case)?.status)), dashArray: /示意|數化/.test(f.properties.precision) ? '6 5' : null}),
   onEachFeature: (f, l) => { if (f.properties.precision === '示意範圍') l.bindTooltip('示意範圍', {sticky: true}); l.on('click', () => go(f.properties.case)); }}).addTo(map);
 const caseOf = id => CASES.find(c => c.id === id);
 const boundOf = id => BOUNDS.features.find(f => f.properties.case === id);
@@ -426,7 +426,7 @@ function renderCase(c) {
       <dt>面積</dt><dd>${esc(fmtArea(c.area))}${c.area_note ? '<br><span style="color:var(--mute);font-size:14px">' + esc(c.area_note) + '</span>' : ''}</dd>
       <dt>主辦</dt><dd>${esc(c.agency || '—')}</dd>
       <dt>期間</dt><dd>${esc(c.period || '—')}</dd>
-      <dt>範圍</dt><dd>${(b => b ? (b.properties.precision === '示意範圍' ? `<strong>示意範圍</strong>：依<a href="${esc(safeUrl(b.properties.url))}" target="_blank" rel="noopener">${esc(b.properties.source)}</a>之段界描繪，圖面約 ${esc(fmtArea(b.properties.area_ha))}${c.area ? '，公告面積 ' + esc(fmtArea(c.area)) : ''}。非官方公告範圍，僅供理解區位與規模。${b.properties.caveat ? '<br><span style="color:var(--mute);font-size:14px">' + esc(b.properties.caveat) + '</span>' : ''}` : `${esc(b.properties.precision)}：<a href="${esc(safeUrl(b.properties.url))}" target="_blank" rel="noopener">${esc(b.properties.source)}</a>${b.properties.area_ha ? '（圖面計算約 ' + esc(fmtArea(b.properties.area_ha)) + '）' : ''}`) : '<span style="color:var(--mute)">官方範圍圖資待補，地圖以點位示意</span>')(boundOf(c.id))}</dd>
+      <dt>範圍</dt><dd>${(b => b ? (b.properties.precision === '示意範圍' ? `<strong>示意範圍</strong>：依<a href="${esc(safeUrl(b.properties.url))}" target="_blank" rel="noopener">${esc(b.properties.source)}</a>之段界描繪，圖面約 ${esc(fmtArea(b.properties.area_ha))}${c.area ? '，公告面積 ' + esc(fmtArea(c.area)) : ''}。非官方公告範圍，僅供理解區位與規模。${b.properties.caveat ? '<br><span style="color:var(--mute);font-size:14px">' + esc(b.properties.caveat) + '</span>' : ''}` : `${esc(b.properties.precision)}：<a href="${esc(safeUrl(b.properties.url))}" target="_blank" rel="noopener">${esc(b.properties.source)}</a>${b.properties.area_ha ? '（圖面計算約 ' + esc(fmtArea(b.properties.area_ha)) + '）' : ''}${b.properties.caveat ? '<br><span style="color:var(--mute);font-size:14px">' + esc(b.properties.caveat) + '</span>' : ''}`) : '<span style="color:var(--mute)">官方範圍圖資待補，地圖以點位示意</span>')(boundOf(c.id))}</dd>
     </dl>
     <div class="cmp" aria-label="在地圖上比對">
       <span>在地圖上比對</span>

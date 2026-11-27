@@ -80,3 +80,10 @@ node build.js
 ## 示意範圍（data/schematic.json）
 
 尚無官方向量圖的案件，先以國土測繪中心「地段圖」中段籍類別為「區段徵收」的地段，依段界描繪範圍，地圖上以虛線呈現並標註「示意範圍」。描繪方式：於地段圖 WMS 影像上，自青色段名所在地段起做區域填充，再取外框、簡化為多邊形。每案記錄所用段名、圖面面積與公告面積的差異說明（caveat）。取得機關正式圖面後，以 tools/import-boundary.js 匯入官方範圍即會取代示意範圍。
+
+## 桃園市圖層計算（data/official/taoyuan_gis.txt）
+
+來源：桃園市都市計畫地理資訊服務網（https://urplanning.tycg.gov.tw/gisMap/）背後的 ArcGIS 服務 urbandatasrv.tycg.gov.tw/server/rest/services/TY_UPGIS。
+- 航空城：TYMap_SDE 第 21 層「都市計畫區範圍」中「桃園國際機場園區及附近地區特定區計畫」與「桃園航空城(二期)」兩筆聯集，扣除第 19 層「航空城剔除區段徵收地區」（55 筆）。計算結果 3,146.5 公頃（第一期 2,596.9、第二期 549.6），與民航局公布區徵面積 3,148 公頃（1,413＋1,185＋549）相符。案件頁標示為「官方圖資計算」。
+- 其他：TYMapV_more 第 41 層「整體開發地區」中開發方式為區段徵收者，放入「官方公布的徵收範圍」比較圖層。
+- 計算在瀏覽器以 ArcGIS JS geometryEngine 完成，結果以 1e5 差分整數編碼存檔，由 tools/taoyuan-gis.js 解碼。
