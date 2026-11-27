@@ -29,7 +29,6 @@ const bp = path.join(root, 'data/boundaries.geojson');
 const bounds = fs.existsSync(bp) ? JSON.parse(fs.readFileSync(bp, 'utf8')) : { type: 'FeatureCollection', features: [] };
 for (const f of bounds.features) if (!ids.has(f.properties.case)) throw new Error('範圍檔有未知案件 ' + f.properties.case);
 fs.writeFileSync(path.join(root, 'docs/bounds.js'), '/* 徵收範圍：由 tools/import-boundary.js 匯入 */\nwindow.WAVE_BOUNDS=' + JSON.stringify(bounds) + ';\n');
-fs.writeFileSync(path.join(root, 'docs/geo.js'), 'window.WAVE_GEO=' + JSON.stringify(geo) + ';\n');
 
 // CSV
 const esc = v => { v = v == null ? '' : String(v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
@@ -39,4 +38,4 @@ fs.mkdirSync(path.join(root, 'sheet'), { recursive: true });
 fs.writeFileSync(path.join(root, 'sheet/cases.csv'), '﻿' + [caseCols.join(','), ...caseRows].join('\n'));
 const evCols = ['case', 'date', 'type', 'title', 'url'];
 fs.writeFileSync(path.join(root, 'sheet/events.csv'), '﻿' + [evCols.join(','), ...events.map(e => evCols.map(k => esc(e[k])).join(','))].join('\n'));
-console.log(cases.length, 'cases,', bounds.features.length, 'boundaries,', events.length, 'events,', (fs.statSync(path.join(root, 'docs/geo.js')).size / 1024).toFixed(0) + 'KB geo');
+console.log(cases.length, 'cases,', bounds.features.length, 'boundaries,', events.length, 'events,');

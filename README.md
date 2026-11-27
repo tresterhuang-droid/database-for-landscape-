@@ -31,18 +31,23 @@
 
 ## 地圖圖層
 
-底圖與比較圖層都由讀者瀏覽器直接向內政部國土測繪中心 WMTS 取圖（`https://wmts.nlsc.gov.tw/wmts/{圖層}/default/GoogleMapsCompatible/{z}/{y}/{x}`）：
+底圖與比較圖層由讀者瀏覽器直接向內政部國土測繪中心 WMTS 取圖（`https://wmts.nlsc.gov.tw/wmts/{圖層}/default/GoogleMapsCompatible/{z}/{y}/{x}`）。
 
-| 圖層 | 代碼 | 用途 |
+| 分組 | 圖層 | 代碼 |
 | --- | --- | --- |
-| 臺灣通用電子地圖 | EMAP | 道路、地名定位 |
-| 正射影像 | PHOTO2 | 看聚落、農田、整地現況 |
-| 國土利用現況調查 | LUIMAP | 徵收前是農地還是聚落 |
-| 公有土地 | LAND_OPENDATA | 檢驗是否優先使用公有地 |
-| 地段界 | LANDSECT | 區徵後新編地段的範圍 |
-| 村里界 | Village | 受影響村里 |
+| 底圖 | 地形水文界線圖（預設） | MOI_HILLSHADE＋LUIMAP04（水利類）＋本站縣市界 |
+| 底圖 | 簡化縣市圖（離線） | 本站向量 |
+| 底圖 | 灰階／彩色電子地圖 | EMAP01、EMAP |
+| 底圖 | 正射影像，可選 2014 至 2025 年 | PHOTO2、PHOTO2014…PHOTO2025 |
+| 底圖 | 地形渲染圖 | MOI_SHADERMAP |
+| 行政界線 | 鄉鎮市區界、村里界 | 本站向量（`towns.js`、`villages.js`，村里開啟時才下載） |
+| 徵收範圍線索 | 地段類別（青色段名＝工業區整理、區段徵收） | LANDSECT2 |
+| 徵收範圍線索 | 光達地形變異（整地、填土） | DDEM052 |
+| 土地與制度 | 國土利用現況、民國82年國土利用 | LUIMAP、LUIMAP82 |
+| 土地與制度 | 非都市土地使用分區、公有土地 | nURBAN1、LAND_OPENDATA |
+| 地形 | 等高線 | MOI_CONTOUR_2 |
 
-另有內建的簡化縣市向量底圖，外部服務中斷時仍可使用。claude.ai 的預覽頁會擋外部圖磚，所以只看得到向量底圖；上線到 map.waveintaiwan.com 後才會出現上述圖層。
+行政界線來源為 taiwan-atlas（內政部行政區界簡化版），以 `tools/admin-build.js` 產生。國土測繪中心沒有河川圖層，水文以國土利用調查的水利類（河道、水圳、埤塘）呈現。
 
 ## 徵收範圍：匯入官方圖資
 

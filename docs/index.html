@@ -46,6 +46,8 @@ main{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);height:ca
 .lyr input{width:18px;height:18px;margin:3px 0 0}
 .lyr b{font-weight:500;font-size:15px}.lyr small{display:block;color:var(--mute);font-size:13px;line-height:1.5}
 .lyr em{display:block;font-style:normal;color:var(--s-run);font-size:12px}
+.lyr select{display:block;margin-top:6px;font-size:16px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--land);color:var(--ink)}
+.admtip{font-size:13px}
 .lyrnote{font-size:13px;color:var(--mute);margin:2px 0 0;line-height:1.6}
 .tools{position:absolute;right:56px;top:10px;z-index:500;display:flex;gap:6px}
 .tools button{height:44px;padding:0 14px;border:1px solid var(--line);background:var(--bg);font-size:14px;border-radius:6px}
@@ -88,6 +90,8 @@ main{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);height:ca
 .view{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin-top:8px}
 .view small{display:block;color:var(--mute);font-size:13px;margin-bottom:6px}
 .view p{margin:0;font-size:15px}
+.cmp{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:16px;font-size:14px}.cmp span{color:var(--mute);margin-right:4px}
+.cmp button{border:1px solid var(--line);background:none;border-radius:999px;padding:6px 12px;min-height:36px;font-size:14px}.cmp button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
 .src{font-size:14px;padding-left:1.2em;margin:6px 0 0}.src li{margin-bottom:4px}
 .empty{color:var(--mute);padding:24px 0}
 footer{padding:14px max(3vw,16px);border-top:1px solid var(--line);font-size:13px;color:var(--mute);display:flex;flex-wrap:wrap;gap:6px 20px;justify-content:space-between}
@@ -135,8 +139,9 @@ main{grid-template-columns:1fr;height:auto}
 </footer>
 
 <script src="vendor/leaflet.js"></script>
-<script src="geo.js"></script>
 <script src="bounds.js"></script>
+<script src="vendor/topojson-client.min.js"></script>
+<script src="towns.js"></script>
 <script src="data.js"></script>
 <script src="config.js"></script>
 <script>
@@ -194,42 +199,89 @@ const map = L.map('map', {zoomControl: false, minZoom: 7, maxZoom: 18, zoomSnap:
   .fitBounds([[21.85, 119.3], [25.35, 122.05]]);
 map.attributionControl.setPrefix(false);
 L.control.zoom({position: 'topright', zoomInTitle: '放大', zoomOutTitle: '縮小'}).addTo(map);
+map.createPane('admin').style.zIndex = 405;
 map.createPane('bounds').style.zIndex = 410;
 map.createPane('dots').style.zIndex = 420;
 
+const PHOTO_YEARS = [2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015, 2014];
+let photoYear = 'latest';
+const photoId = () => photoYear === 'latest' ? 'PHOTO2' : 'PHOTO' + photoYear;
+const tile = (id, o = {}) => L.tileLayer(NLSC(id), {maxZoom: 19, maxNativeZoom: 18, attribution: NLSC_ATTR, ...o});
+
+/* 向量行政界線（鄉鎮常駐、村里延遲載入） */
+const topo = (t, k) => topojson.feature(t, t.objects[k]);
+let townLayer = null, villLayer = null, villLoading = false;
+const lineStyle = (w, dash) => ({color: rc('var(--ink)'), weight: w, opacity: .55, dashArray: dash, fill: true, fillOpacity: 0});
+function adminTip(l, p) { l.bindTooltip(`${p.c}${p.t}${p.v ? ' ' + p.v : ''}`, {sticky: true, direction: 'top', className: 'admtip'}); }
+function makeTowns() { return L.geoJSON(TOWNF, {pane: 'admin', style: lineStyle(1.1), onEachFeature: (f, l) => adminTip(l, f.properties)}); }
+function loadVillages(cb) {
+  if (window.WAVE_VILLAGES) return cb();
+  if (villLoading) return; villLoading = true;
+  const s = document.createElement('script'); s.src = 'villages.js'; s.onload = () => { villLoading = false; cb(); }; document.body.appendChild(s);
+}
+function makeVillages() { return L.geoJSON(topo(WAVE_VILLAGES, 'villages'), {pane: 'admin', style: lineStyle(.6, '2 3'), onEachFeature: (f, l) => adminTip(l, f.properties)}); }
+/* 縣市輪廓與陸地底色（地形水文圖用半透明白色淡化陰影） */
+const TOWNF = topo(WAVE_TOWNS, 'towns');
+const COUNTY_MESH = topojson.mesh(WAVE_TOWNS, WAVE_TOWNS.objects.towns, (a, b) => a === b || a.properties.c !== b.properties.c);
+const landFill = op => L.layerGroup([
+  L.geoJSON(TOWNF, {interactive: false, style: {stroke: false, fillColor: rc('var(--land)'), fillOpacity: op}}),
+  L.geoJSON(COUNTY_MESH, {interactive: false, style: {color: rc('var(--ink)'), weight: 1.4, opacity: .7, fill: false}})]);
+
 const LAYERS = [
-  {id:'vector', kind:'base', name:'簡化縣市圖', desc:'網站內建的向量底圖，不依賴外部服務。', make: () => L.geoJSON(WAVE_GEO, {interactive:false, style:{color: rc('var(--line)'), weight:0.8, fillColor: rc('var(--land)'), fillOpacity:1}})},
-  {id:'EMAP', kind:'base', name:'臺灣通用電子地圖', desc:'道路、地名與行政界，適合定位案件周邊環境。', make: () => L.tileLayer(NLSC('EMAP'), {maxZoom:18, attribution:NLSC_ATTR})},
-  {id:'PHOTO2', kind:'base', name:'正射影像', desc:'航拍影像。可直接看到聚落、農田與已整地的區塊。', make: () => L.tileLayer(NLSC('PHOTO2'), {maxZoom:18, attribution:NLSC_ATTR})},
-  {id:'LUIMAP', kind:'over', name:'國土利用現況調查', desc:'農業、建築、交通等現況使用。對照徵收範圍內原本是農地還是聚落。', make: () => L.tileLayer(NLSC('LUIMAP'), {maxZoom:18, opacity:.65, attribution:NLSC_ATTR})},
-  {id:'LAND_OPENDATA', kind:'over', name:'公有土地', desc:'公有地分布。《土地徵收條例》要求優先使用無使用計畫的公有地，這一層可以檢驗選址。', make: () => L.tileLayer(NLSC('LAND_OPENDATA'), {maxZoom:18, opacity:.75, attribution:NLSC_ATTR})},
-  {id:'LANDSECT', kind:'over', name:'地段界（段籍圖）', desc:'地籍「段」的範圍。區段徵收完成後多會重編新段，放大可看到新舊地段的交界。', make: () => L.tileLayer(NLSC('LANDSECT'), {maxZoom:18, opacity:.85, attribution:NLSC_ATTR})},
-  {id:'Village', kind:'over', name:'村里界', desc:'受影響的村里與社區範圍。', make: () => L.tileLayer(NLSC('Village'), {maxZoom:18, opacity:.8, attribution:NLSC_ATTR})}
+  {id:'terrain', kind:'base', name:'地形水文界線圖', desc:'地形陰影、水利用地（河道、水圳、埤塘）與縣市界線，不含道路與地名。搭配鄉鎮、村里界使用。',
+    make: () => L.layerGroup([tile('MOI_HILLSHADE', {opacity: .9}), tile('LUIMAP04', {opacity: .85}), landFill(.42)])},
+  {id:'vector', kind:'base', name:'簡化縣市圖', desc:'網站內建的向量底圖，不依賴外部服務。', make: () => landFill(1)},
+  {id:'EMAP01', kind:'base', name:'灰階電子地圖', desc:'道路與地名，以灰階呈現，案件色彩較清楚。', make: () => tile('EMAP01')},
+  {id:'EMAP', kind:'base', name:'臺灣通用電子地圖', desc:'彩色版電子地圖。', make: () => tile('EMAP')},
+  {id:'PHOTO', kind:'base', name:'正射影像（可選年份）', desc:'航拍影像。切換年份可比對徵收前後的聚落、農田與整地。', make: () => tile(photoId())},
+  {id:'SHADER', kind:'base', name:'地形渲染圖', desc:'以色彩表現高程的地形圖。', make: () => tile('MOI_SHADERMAP')},
+  {id:'TOWNV', kind:'over', grp:'行政界線', name:'鄉鎮市區界', desc:'游標停留或點按可看行政區名稱。', make: makeTowns},
+  {id:'VILLV', kind:'over', grp:'行政界線', name:'村里界', desc:'全台約7,700個村里（約1MB，開啟時才下載）。', make: null},
+  {id:'LANDSECT2', kind:'over', grp:'徵收範圍線索', name:'地段類別（段籍圖）', desc:'地段界與段名。段名以青色標示者為「工業區整理、區段徵收」辦理的地段，是目前全國性最接近區段徵收範圍的官方圖。放大到街區尺度才會顯示。', make: () => tile('LANDSECT2', {opacity: .95})},
+  {id:'DDEM052', kind:'over', grp:'徵收範圍線索', name:'光達地形變異', desc:'兩期空載光達相減，標示地表高程顯著改變處，可看出大面積整地、填土與開挖。', make: () => tile('DDEM052', {opacity: .8})},
+  {id:'LUIMAP', kind:'over', grp:'土地與制度', name:'國土利用現況（最新）', desc:'農業、建築、交通等現況使用。對照徵收範圍內原本的土地紋理。', make: () => tile('LUIMAP', {opacity: .65})},
+  {id:'LUIMAP82', kind:'over', grp:'土地與制度', name:'國土利用調查（民國82年）', desc:'1990年代初期的土地利用，可對照三十年來的變化。', make: () => tile('LUIMAP82', {opacity: .65})},
+  {id:'nURBAN1', kind:'over', grp:'土地與制度', name:'非都市土地使用分區', desc:'特定農業區、一般農業區等。可檢視徵收範圍是否涉及優良農地。', make: () => tile('nURBAN1', {opacity: .6})},
+  {id:'LAND_OPENDATA', kind:'over', grp:'土地與制度', name:'公有土地', desc:'《土地徵收條例》要求優先使用無使用計畫的公有地，這一層可以檢驗選址。', make: () => tile('LAND_OPENDATA', {opacity: .75})},
+  {id:'CONTOUR', kind:'over', grp:'地形', name:'等高線', desc:'2010至2015年數值地形模型繪製。', make: () => tile('MOI_CONTOUR_2', {opacity: .8})}
 ];
-const layerObj = {}, layerOn = new Set(['vector']), layerErr = new Set();
+const layerObj = {}, layerOn = new Set(), layerErr = new Set();
+function watchErr(id, l) {
+  const each = x => x.on && x.on('tileerror', () => { if (!layerErr.has(id)) { layerErr.add(id); renderLayers(); } });
+  l.eachLayer ? l.eachLayer(each) : each(l);
+}
 function layer(id) {
-  if (!layerObj[id]) {
-    const d = LAYERS.find(x => x.id === id); layerObj[id] = d.make();
-    layerObj[id].on && layerObj[id].on('tileerror', () => { if (!layerErr.has(id)) { layerErr.add(id); renderLayers(); } });
-  }
+  if (!layerObj[id]) { const d = LAYERS.find(x => x.id === id); layerObj[id] = d.make(); watchErr(id, layerObj[id]); }
   return layerObj[id];
 }
 function setLayer(id, on) {
   const d = LAYERS.find(x => x.id === id);
+  if (id === 'VILLV') {
+    if (on) { layerOn.add(id); loadVillages(() => { if (!layerOn.has('VILLV')) return; villLayer = villLayer || makeVillages(); villLayer.addTo(map); renderLayers(); }); }
+    else { layerOn.delete(id); villLayer && map.removeLayer(villLayer); }
+    return save(), renderLayers();
+  }
   if (d.kind === 'base' && on) LAYERS.filter(x => x.kind === 'base' && x.id !== id).forEach(x => { layerOn.delete(x.id); if (layerObj[x.id]) map.removeLayer(layerObj[x.id]); });
   on ? (layerOn.add(id), layer(id).addTo(map)) : (layerOn.delete(id), layerObj[id] && map.removeLayer(layerObj[id]));
-  if (d.kind === 'base') layer(id).bringToBack && layer(id).bringToBack();
-  try { localStorage.setItem('wave-layers', JSON.stringify([...layerOn])); } catch (e) {}
-  renderLayers();
+  save(); renderLayers();
+}
+function save() { try { localStorage.setItem('wave-layers2', JSON.stringify({on: [...layerOn], year: photoYear})); } catch (e) {} }
+function setPhotoYear(y) {
+  photoYear = y;
+  if (layerObj.PHOTO) { map.removeLayer(layerObj.PHOTO); delete layerObj.PHOTO; layerErr.delete('PHOTO'); }
+  if (!layerOn.has('PHOTO')) setLayer('PHOTO', true); else { layer('PHOTO').addTo(map); save(); renderLayers(); }
 }
 function renderLayers() {
   const row = d => `<label class="lyr"><input type="${d.kind === 'base' ? 'radio' : 'checkbox'}" name="${d.kind}" value="${d.id}" ${layerOn.has(d.id) ? 'checked' : ''}>
-    <span><b>${d.name}</b>${layerErr.has(d.id) ? '<em>此環境無法載入，正式網站會顯示</em>' : ''}<small>${d.desc}</small></span></label>`;
+    <span><b>${d.name}</b>${layerErr.has(d.id) ? '<em>此環境無法載入，正式網站會顯示</em>' : ''}${d.id === 'VILLV' && villLoading ? '<em style="color:var(--mute)">下載中…</em>' : ''}<small>${d.desc}</small>
+    ${d.id === 'PHOTO' ? `<select id="pyear" aria-label="影像年份"><option value="latest"${photoYear === 'latest' ? ' selected' : ''}>最新</option>${PHOTO_YEARS.map(y => `<option value="${y}"${String(photoYear) === String(y) ? ' selected' : ''}>${y}年（民國${y - 1911}年）</option>`).join('')}</select>` : ''}</span></label>`;
+  const grps = [...new Set(LAYERS.filter(d => d.grp).map(d => d.grp))];
   document.getElementById('layers').innerHTML =
-    `<h4>底圖</h4>${LAYERS.filter(d => d.kind === 'base').map(row).join('')}
-     <h4>比較圖層</h4>${LAYERS.filter(d => d.kind === 'over').map(row).join('')}
-     <h4>徵收範圍</h4><p class="lyrnote">${BOUNDS.features.length ? `已收錄 ${BOUNDS.features.length} 案範圍。實線為官方範圍，虛線為依計畫圖數化或示意。` : '官方範圍圖資整理中。目前以點位標示，點大小對應徵收面積。'}</p>`;
+    `<h4>底圖</h4>${LAYERS.filter(d => d.kind === 'base').map(row).join('')}` +
+    grps.map(g => `<h4>${g}</h4>${LAYERS.filter(d => d.grp === g).map(row).join('')}`).join('') +
+    `<h4>本站整理的徵收範圍</h4><p class="lyrnote">${BOUNDS.features.length ? `已收錄 ${BOUNDS.features.length} 案範圍。實線為官方範圍，虛線為依計畫圖數化或示意。` : '各案官方範圍圖資整理中，目前以點位標示，點大小對應徵收面積。可先開啟「地段類別」比對青色段名。'}</p>`;
   document.querySelectorAll('#layers input').forEach(i => i.onchange = () => setLayer(i.value, i.checked));
+  const py = document.getElementById('pyear'); if (py) { py.onclick = e => e.preventDefault(); py.onchange = () => setPhotoYear(py.value); }
 }
 document.getElementById('lyrbtn').onclick = () => document.getElementById('layers').classList.toggle('open');
 
@@ -265,13 +317,14 @@ function styleDots() {
 function zoomTo(c) {
   const b = boundOf(c.id);
   if (b) map.flyToBounds(L.geoJSON(b).getBounds(), {padding:[40, 40], duration:.7, maxZoom:16});
-  else map.flyTo([c.lat, c.lng], layerOn.has('vector') ? 10.5 : 14, {duration:.7});
+  else map.flyTo([c.lat, c.lng], 13.5, {duration:.7});
 }
 document.getElementById('zreset').onclick = () => map.flyToBounds([[21.85, 119.3], [25.35, 122.05]], {duration:.5});
 new ResizeObserver(() => map.invalidateSize()).observe(document.getElementById('map'));
-let saved = null; try { saved = JSON.parse(localStorage.getItem('wave-layers')); } catch (e) {}
-(saved && saved.length ? saved : ['vector']).forEach(id => LAYERS.some(d => d.id === id) && setLayer(id, true));
-if (![...layerOn].some(id => LAYERS.find(d => d.id === id).kind === 'base')) setLayer('vector', true);
+let saved = null; try { saved = JSON.parse(localStorage.getItem('wave-layers2')); } catch (e) {}
+if (saved && saved.year) photoYear = saved.year;
+(saved && saved.on && saved.on.length ? saved.on : ['terrain', 'TOWNV']).forEach(id => LAYERS.some(d => d.id === id) && setLayer(id, true));
+if (![...layerOn].some(id => LAYERS.find(d => d.id === id).kind === 'base')) setLayer('terrain', true);
 
 /* ---------- 篩選與列表 ---------- */
 function filtered() {
@@ -329,6 +382,11 @@ function renderCase(c) {
       <dt>期間</dt><dd>${esc(c.period || '—')}</dd>
       <dt>範圍</dt><dd>${(b => b ? `${esc(b.properties.precision)}：<a href="${esc(safeUrl(b.properties.url))}" target="_blank" rel="noopener">${esc(b.properties.source)}</a>${b.properties.area_ha ? '（圖面計算約 ' + esc(fmtArea(b.properties.area_ha)) + '）' : ''}` : '<span style="color:var(--mute)">官方範圍圖資待補，地圖以點位示意</span>')(boundOf(c.id))}</dd>
     </dl>
+    <div class="cmp" aria-label="在地圖上比對">
+      <span>在地圖上比對</span>
+      <button data-y="2014">2014年影像</button><button data-y="latest">最新影像</button>
+      <button data-l="LANDSECT2">地段類別</button><button data-l="DDEM052">光達整地</button><button data-l="LUIMAP82">民國82年土地利用</button>
+    </div>
     <h3 class="sec">進度</h3><p>${esc(c.summary)}</p>
     <h3 class="sec">爭議與各方說法</h3><p>${esc(c.controversy || '資料待補。')}</p>
     <h3 class="sec">時間軸</h3>
@@ -339,6 +397,15 @@ function renderCase(c) {
     <ol class="src">${(c.sources || []).map(s => `<li><a href="${esc(safeUrl(s.u))}" target="_blank" rel="noopener">${esc(s.t)}</a></li>`).join('')}</ol>
   </article>`;
   document.getElementById('back').onclick = () => { location.hash = ''; };
+  pane.querySelectorAll('.cmp button').forEach(b => {
+    if (b.dataset.l) b.setAttribute('aria-pressed', layerOn.has(b.dataset.l));
+    b.onclick = () => {
+      if (b.dataset.y) setPhotoYear(b.dataset.y);
+      else { const on = !layerOn.has(b.dataset.l); setLayer(b.dataset.l, on); b.setAttribute('aria-pressed', on); }
+      if (map.getZoom() < 13) map.flyTo([c.lat, c.lng], 14, {duration: .6});
+      if (matchMedia('(max-width:860px)').matches) document.querySelector('.map').scrollIntoView({behavior: 'smooth'});
+    };
+  });
   pane.scrollTop = 0;
 }
 
