@@ -48,6 +48,8 @@ main{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);height:ca
 .lyr em{display:block;font-style:normal;color:var(--s-run);font-size:12px}
 .lyr select{display:block;margin-top:6px;font-size:16px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--land);color:var(--ink)}
 .admtip{font-size:13px}
+.moi summary{cursor:pointer;font-weight:500;min-height:44px;display:flex;align-items:center}
+.moi table{width:100%;border-collapse:collapse;font-size:14px}.moi th,.moi td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}.moi td:first-child,.moi td:nth-child(3){white-space:nowrap}.moi .num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
 .lyrnote{font-size:13px;color:var(--mute);margin:2px 0 0;line-height:1.6}
 .tools{position:absolute;right:56px;top:10px;z-index:500;display:flex;gap:6px}
 .tools button{height:44px;padding:0 14px;border:1px solid var(--line);background:var(--bg);font-size:14px;border-radius:6px}
@@ -100,8 +102,10 @@ main{grid-template-columns:1fr;height:auto}
 .map{height:62vh;min-height:380px;border-right:0;border-bottom:1px solid var(--line)}
 .panel{overflow:visible}.scrollpane{overflow:visible}
 .legend{display:none}}
+@media(max-width:600px){.stack thead{display:none}.stack tr{display:grid;padding-block:10px;border-bottom:1px solid var(--line)}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:7em;text-align:start!important}.stack td::before{content:attr(data-l);float:inline-start;width:6.5em;margin-inline-start:-7em;color:var(--mute)}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
+<script>new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=c.closest('table').rows[0].cells[i]?.textContent||''}}).observe(document,{childList:true,subtree:true})</script>
 </head>
 <body>
 <header>
@@ -142,6 +146,8 @@ main{grid-template-columns:1fr;height:auto}
 <script src="bounds.js"></script>
 <script src="vendor/topojson-client.min.js"></script>
 <script src="towns.js"></script>
+<script src="official.js"></script>
+<script src="moi.js"></script>
 <script src="data.js"></script>
 <script src="config.js"></script>
 <script>
@@ -227,6 +233,31 @@ const landFill = op => L.layerGroup([
   L.geoJSON(TOWNF, {interactive: false, style: {stroke: false, fillColor: rc('var(--land)'), fillOpacity: op}}),
   L.geoJSON(COUNTY_MESH, {interactive: false, style: {color: rc('var(--ink)'), weight: 1.4, opacity: .7, fill: false}})]);
 
+const OFF_COL = {'已完成': 'var(--s-done)', '辦理中': 'var(--s-run)', '規劃中': 'var(--s-plan)'};
+function makeOfficial() {
+  return L.geoJSON(window.WAVE_OFFICIAL, {pane: 'bounds', filter: f => !f.properties.case,
+    style: f => ({color: rc(OFF_COL[f.properties.status] || 'var(--s-done)'), weight: 1.6, fillOpacity: .18, fillColor: rc(OFF_COL[f.properties.status] || 'var(--s-done)')}),
+    onEachFeature: (f, l) => {
+      const p = f.properties;
+      l.bindTooltip(`${p.county} ${p.name}（${p.status}）`, {sticky: true});
+      l.on('click', () => p.case ? go(p.case) : l.bindPopup(`<b>${esc(p.county)} ${esc(p.name)}</b><br>狀態：${esc(p.status)}<br>圖面計算約 ${esc(fmtArea(p.area_ha))}<br><a href="${esc(safeUrl(p.url))}" target="_blank" rel="noopener">資料來源</a>`).openPopup());
+    }});
+}
+const normC = n => String(n || '').replace(/^臺/, '台');
+function moiByCounty() {
+  const m = {};
+  for (const r of window.WAVE_MOI || []) { const k = normC(r.county); m[k] = m[k] || {n: 0, a: 0, run: 0}; m[k].n++; m[k].a += r.area || 0; if (r.status === '辦理中') m[k].run++; }
+  return m;
+}
+function makeChoro() {
+  const by = moiByCounty(), max = Math.max(...Object.values(by).map(v => v.a));
+  const counties = [...new Set(WAVE_TOWNS.objects.towns.geometries.map(g => g.properties.c))];
+  const feats = counties.map(c => ({type: 'Feature', properties: {c, ...(by[normC(c)] || {n: 0, a: 0, run: 0})}, geometry: topojson.merge(WAVE_TOWNS, WAVE_TOWNS.objects.towns.geometries.filter(g => g.properties.c === c))}));
+  const ink = rc('var(--s-run)');
+  return L.geoJSON({type: 'FeatureCollection', features: feats}, {pane: 'admin',
+    style: f => ({stroke: true, color: '#fff', weight: .6, fillColor: ink, fillOpacity: f.properties.a ? .08 + .62 * Math.sqrt(f.properties.a / max) : 0}),
+    onEachFeature: (f, l) => l.bindTooltip(`${f.properties.c}：已公告 ${f.properties.n} 案，合計約 ${Math.round(f.properties.a).toLocaleString('zh-TW')} 公頃${f.properties.run ? `（辦理中 ${f.properties.run} 案）` : ''}`, {sticky: true})});
+}
 const LAYERS = [
   {id:'terrain', kind:'base', name:'地形水文界線圖', desc:'地形陰影、水利用地（河道、水圳、埤塘）與縣市界線，不含道路與地名。搭配鄉鎮、村里界使用。',
     make: () => L.layerGroup([tile('MOI_HILLSHADE', {opacity: .9}), tile('LUIMAP04', {opacity: .85}), landFill(.42)])},
@@ -235,6 +266,8 @@ const LAYERS = [
   {id:'EMAP', kind:'base', name:'臺灣通用電子地圖', desc:'彩色版電子地圖。', make: () => tile('EMAP')},
   {id:'PHOTO', kind:'base', name:'正射影像（可選年份）', desc:'航拍影像。切換年份可比對徵收前後的聚落、農田與整地。', make: () => tile(photoId())},
   {id:'SHADER', kind:'base', name:'地形渲染圖', desc:'以色彩表現高程的地形圖。', make: () => tile('MOI_SHADERMAP')},
+  {id:'OFFICIAL', kind:'over', grp:'官方公布的徵收範圍', name:'區段徵收範圍（官方圖資）', desc:'直接取自政府開放資料的範圍圖。目前收錄臺北市20處（臺北市政府地政局），其他縣市陸續加入。點選範圍可看名稱與狀態。', make: makeOfficial},
+  {id:'MOICHORO', kind:'over', grp:'官方公布的徵收範圍', name:'各縣市已公告區段徵收面積', desc:'依內政部地政司全國已公告區段徵收案件統計（至2025年，150案）加總，顏色越深面積越大。', make: makeChoro},
   {id:'TOWNV', kind:'over', grp:'行政界線', name:'鄉鎮市區界', desc:'游標停留或點按可看行政區名稱。', make: makeTowns},
   {id:'VILLV', kind:'over', grp:'行政界線', name:'村里界', desc:'全台約7,700個村里（約1MB，開啟時才下載）。', make: null},
   {id:'LANDSECT2', kind:'over', grp:'徵收範圍線索', name:'地段類別（段籍圖）', desc:'地段界與段名。段名以青色標示者為「工業區整理、區段徵收」辦理的地段，是目前全國性最接近區段徵收範圍的官方圖。放大到街區尺度才會顯示。', make: () => tile('LANDSECT2', {opacity: .95})},
@@ -265,7 +298,7 @@ function setLayer(id, on) {
   on ? (layerOn.add(id), layer(id).addTo(map)) : (layerOn.delete(id), layerObj[id] && map.removeLayer(layerObj[id]));
   save(); renderLayers();
 }
-function save() { try { localStorage.setItem('wave-layers2', JSON.stringify({on: [...layerOn], year: photoYear})); } catch (e) {} }
+function save() { try { localStorage.setItem('wave-layers3', JSON.stringify({on: [...layerOn], year: photoYear})); } catch (e) {} }
 function setPhotoYear(y) {
   photoYear = y;
   if (layerObj.PHOTO) { map.removeLayer(layerObj.PHOTO); delete layerObj.PHOTO; layerErr.delete('PHOTO'); }
@@ -321,9 +354,9 @@ function zoomTo(c) {
 }
 document.getElementById('zreset').onclick = () => map.flyToBounds([[21.85, 119.3], [25.35, 122.05]], {duration:.5});
 new ResizeObserver(() => map.invalidateSize()).observe(document.getElementById('map'));
-let saved = null; try { saved = JSON.parse(localStorage.getItem('wave-layers2')); } catch (e) {}
+let saved = null; try { saved = JSON.parse(localStorage.getItem('wave-layers3')); } catch (e) {}
 if (saved && saved.year) photoYear = saved.year;
-(saved && saved.on && saved.on.length ? saved.on : ['terrain', 'TOWNV']).forEach(id => LAYERS.some(d => d.id === id) && setLayer(id, true));
+(saved && saved.on && saved.on.length ? saved.on : ['terrain', 'TOWNV', 'OFFICIAL']).forEach(id => LAYERS.some(d => d.id === id) && setLayer(id, true));
 if (![...layerOn].some(id => LAYERS.find(d => d.id === id).kind === 'base')) setLayer('terrain', true);
 
 /* ---------- 篩選與列表 ---------- */
@@ -362,8 +395,21 @@ function renderHome() {
     <div class="law"><b>2011年12月</b>　大埔、相思寮事件後，立法院修正《土地徵收條例》，改採市價補償，並要求徵收前評估社會、經濟、文化生態與永續等公益性因素；民間要求的聽證制度未被納入。</div>
     <div class="law"><b>2023年6月</b>　台北高等行政法院在航空城案判決9名居民勝訴，指審議小組未實質審查公益性與必要性。</div>
     <div class="law"><b>2026年5月</b>　航空城被徵收居民聲請憲法審查，挑戰區段徵收、先行區段徵收與土地、改良物分開徵收等規定。</div>
+    ${moiHTML()}
     <h3 class="sec">案件登記簿</h3></div>` + listHTML();
   bindList();
+}
+function moiHTML() {
+  const M = window.WAVE_MOI || []; if (!M.length) return '';
+  const done = M.filter(r => r.status === '辦理完成'), run = M.filter(r => r.status === '辦理中');
+  const sum = a => Math.round(a.reduce((s, r) => s + (r.area || 0), 0)).toLocaleString('zh-TW');
+  const rocDate = d => d ? `${d.slice(0, -4)}.${d.slice(-4, -2)}` : '';
+  const rows = [...M].sort((a, b) => (b.area || 0) - (a.area || 0)).map(r => `<tr><td>${esc(r.county)}</td><td>${esc(r.name)}</td><td>${esc(r.status)}</td><td class="num">${r.area ? esc(r.area.toFixed(1)) : ''}</td><td class="num">${esc(rocDate(r.date))}</td></tr>`).join('');
+  return `<h3 class="sec">全國有多少區段徵收</h3>
+    <p>依內政部地政司的統計，至2025年全國已公告區段徵收 ${M.length} 案，合計約 ${sum(M)} 公頃；其中辦理完成 ${done.length} 案（約 ${sum(done)} 公頃），辦理中 ${run.length} 案（約 ${sum(run)} 公頃）。此統計不含尚在規劃、審議中的案件，例如社子島、台知園區、竹科三期。</p>
+    <details class="moi"><summary>展開全國已公告案件清單（依面積排序）</summary>
+    <div class="scroll"><table class="stack"><thead><tr><th>縣市</th><th>案名</th><th>狀態</th><th class="num">面積（公頃）</th><th class="num">核定（民國）</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="lyrnote">資料來源：<a href="https://data.gov.tw/dataset/127668" target="_blank" rel="noopener">內政部地政司「全國已公告區段徵收案件統計」</a></p></details>`;
 }
 function bindList() { document.querySelectorAll('.list button').forEach(b => b.onclick = () => go(b.dataset.id)); }
 

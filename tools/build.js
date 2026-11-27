@@ -27,6 +27,17 @@ fs.writeFileSync(path.join(root, 'docs/data.js'),
   'window.WAVE_EVENTS=' + JSON.stringify(events) + ';\n');
 const bp = path.join(root, 'data/boundaries.geojson');
 const bounds = fs.existsSync(bp) ? JSON.parse(fs.readFileSync(bp, 'utf8')) : { type: 'FeatureCollection', features: [] };
+// 官方範圍（政府開放資料）：全部輸出為比較圖層，對應到案件者併入案件範圍
+const op = path.join(root, 'data/official.geojson');
+const official = fs.existsSync(op) ? JSON.parse(fs.readFileSync(op, 'utf8')) : { type: 'FeatureCollection', features: [] };
+for (const f of official.features) if (f.properties.case && !bounds.features.some(b => b.properties.case === f.properties.case))
+  bounds.features.push({ type: 'Feature', properties: { case: f.properties.case, precision: '官方範圍', source: f.properties.source, url: f.properties.url, area_ha: f.properties.area_ha }, geometry: f.geometry });
+fs.writeFileSync(path.join(root, 'docs/official.js'), 'window.WAVE_OFFICIAL=' + JSON.stringify(official) + ';\n');
+// 全國已公告區段徵收案件（地政司）
+const csvLines = fs.readFileSync(path.join(root, 'data/moi_cases.csv'), 'utf8').replace(/^\ufeff/, '').trim().split('\n');
+const splitCsv = l => { const o = []; let f = '', q = false; for (const ch of l) { if (q) { if (ch === '"') q = false; else f += ch; } else if (ch === '"') q = true; else if (ch === ',') { o.push(f); f = ''; } else f += ch; } o.push(f); return o; };
+const moi = csvLines.slice(1).map(splitCsv).map(r => ({ id: r[0], status: r[2], county: r[3], name: r[4], org: r[5], area: +r[6] || null, build: +r[7] || null, pub: +r[8] || null, date: r[9] }));
+fs.writeFileSync(path.join(root, 'docs/moi.js'), 'window.WAVE_MOI=' + JSON.stringify(moi) + ';\n');
 for (const f of bounds.features) if (!ids.has(f.properties.case)) throw new Error('範圍檔有未知案件 ' + f.properties.case);
 fs.writeFileSync(path.join(root, 'docs/bounds.js'), '/* 徵收範圍：由 tools/import-boundary.js 匯入 */\nwindow.WAVE_BOUNDS=' + JSON.stringify(bounds) + ';\n');
 
@@ -38,4 +49,4 @@ fs.mkdirSync(path.join(root, 'sheet'), { recursive: true });
 fs.writeFileSync(path.join(root, 'sheet/cases.csv'), '﻿' + [caseCols.join(','), ...caseRows].join('\n'));
 const evCols = ['case', 'date', 'type', 'title', 'url'];
 fs.writeFileSync(path.join(root, 'sheet/events.csv'), '﻿' + [evCols.join(','), ...events.map(e => evCols.map(k => esc(e[k])).join(','))].join('\n'));
-console.log(cases.length, 'cases,', bounds.features.length, 'boundaries,', events.length, 'events,');
+console.log(cases.length, 'cases,', bounds.features.length, 'boundaries,', official.features.length, 'official,', moi.length, 'moi,', events.length, 'events,');

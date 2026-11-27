@@ -49,6 +49,13 @@
 
 行政界線來源為 taiwan-atlas（內政部行政區界簡化版），以 `tools/admin-build.js` 產生。國土測繪中心沒有河川圖層，水文以國土利用調查的水利類（河道、水圳、埤塘）呈現。
 
+## 官方資料（已收錄）
+
+- `data/official/taipei.txt`：臺北市區段徵收區範圍（20處，[dataset 121676](https://data.gov.tw/dataset/121676)），由原始 SHP 解析，TWD97 整數座標差分編碼、抽稀誤差 1.5 公尺內。`tools/official-build.js` 轉為 `data/official.geojson`，`data/official/links.json` 對應本站案件。
+- `data/moi_cases.csv`：內政部地政司「全國已公告區段徵收案件統計」（至2025年，150案，[dataset 127668](https://data.gov.tw/dataset/127668)），網站用於各縣市面積圖層與全國清單，並校正各案官方面積。
+
+已查但無法直接使用：臺中市重劃區及區段徵收區範圍圖（僅提供 Google Drive 圖片連結）、臺中各案都市計畫公告圖（PDF）。桃園、臺南、新竹市等提供的是範圍「地號清單」，需搭配地籍圖才能畫出範圍。
+
 ## 徵收範圍：匯入官方圖資
 
 ```
