@@ -312,7 +312,7 @@ function renderLayers() {
   document.getElementById('layers').innerHTML =
     `<h4>底圖</h4>${LAYERS.filter(d => d.kind === 'base').map(row).join('')}` +
     grps.map(g => `<h4>${g}</h4>${LAYERS.filter(d => d.grp === g).map(row).join('')}`).join('') +
-    `<h4>本站整理的徵收範圍</h4><p class="lyrnote">${BOUNDS.features.length ? `已收錄 ${BOUNDS.features.length} 案範圍。實線為官方範圍，虛線為依計畫圖數化或示意。` : '各案官方範圍圖資整理中，目前以點位標示，點大小對應徵收面積。可先開啟「地段類別」比對青色段名。'}</p>`;
+    `<h4>本站整理的徵收範圍</h4><p class="lyrnote">${BOUNDS.features.length ? `已收錄 ${BOUNDS.features.length} 案範圍。實線為官方公告範圍；虛線為「示意範圍」，依國土測繪中心地段圖中段籍類別為區段徵收之地段描繪，非官方圖面。` : '各案官方範圍圖資整理中，目前以點位標示，點大小對應徵收面積。可先開啟「地段類別」比對青色段名。'}</p>`;
   document.querySelectorAll('#layers input').forEach(i => i.onchange = () => setLayer(i.value, i.checked));
   const py = document.getElementById('pyear'); if (py) { py.onclick = e => e.preventDefault(); py.onchange = () => setPhotoYear(py.value); }
 }
@@ -321,7 +321,7 @@ document.getElementById('lyrbtn').onclick = () => document.getElementById('layer
 let BOUNDS = window.WAVE_BOUNDS || {type:'FeatureCollection', features:[]};
 const boundLayer = L.geoJSON(null, {pane:'bounds',
   style: f => ({color: rc(col(caseOf(f.properties.case)?.status)), weight: 2, fillOpacity: .22, fillColor: rc(col(caseOf(f.properties.case)?.status)), dashArray: f.properties.precision === '官方範圍' ? null : '6 5'}),
-  onEachFeature: (f, l) => l.on('click', () => go(f.properties.case))}).addTo(map);
+  onEachFeature: (f, l) => { if (f.properties.precision === '示意範圍') l.bindTooltip('示意範圍', {sticky: true}); l.on('click', () => go(f.properties.case)); }}).addTo(map);
 const caseOf = id => CASES.find(c => c.id === id);
 const boundOf = id => BOUNDS.features.find(f => f.properties.case === id);
 
@@ -426,7 +426,7 @@ function renderCase(c) {
       <dt>面積</dt><dd>${esc(fmtArea(c.area))}${c.area_note ? '<br><span style="color:var(--mute);font-size:14px">' + esc(c.area_note) + '</span>' : ''}</dd>
       <dt>主辦</dt><dd>${esc(c.agency || '—')}</dd>
       <dt>期間</dt><dd>${esc(c.period || '—')}</dd>
-      <dt>範圍</dt><dd>${(b => b ? `${esc(b.properties.precision)}：<a href="${esc(safeUrl(b.properties.url))}" target="_blank" rel="noopener">${esc(b.properties.source)}</a>${b.properties.area_ha ? '（圖面計算約 ' + esc(fmtArea(b.properties.area_ha)) + '）' : ''}` : '<span style="color:var(--mute)">官方範圍圖資待補，地圖以點位示意</span>')(boundOf(c.id))}</dd>
+      <dt>範圍</dt><dd>${(b => b ? (b.properties.precision === '示意範圍' ? `<strong>示意範圍</strong>：依<a href="${esc(safeUrl(b.properties.url))}" target="_blank" rel="noopener">${esc(b.properties.source)}</a>之段界描繪，圖面約 ${esc(fmtArea(b.properties.area_ha))}${c.area ? '，公告面積 ' + esc(fmtArea(c.area)) : ''}。非官方公告範圍，僅供理解區位與規模。${b.properties.caveat ? '<br><span style="color:var(--mute);font-size:14px">' + esc(b.properties.caveat) + '</span>' : ''}` : `${esc(b.properties.precision)}：<a href="${esc(safeUrl(b.properties.url))}" target="_blank" rel="noopener">${esc(b.properties.source)}</a>${b.properties.area_ha ? '（圖面計算約 ' + esc(fmtArea(b.properties.area_ha)) + '）' : ''}`) : '<span style="color:var(--mute)">官方範圍圖資待補，地圖以點位示意</span>')(boundOf(c.id))}</dd>
     </dl>
     <div class="cmp" aria-label="在地圖上比對">
       <span>在地圖上比對</span>

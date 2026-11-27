@@ -32,6 +32,11 @@ const op = path.join(root, 'data/official.geojson');
 const official = fs.existsSync(op) ? JSON.parse(fs.readFileSync(op, 'utf8')) : { type: 'FeatureCollection', features: [] };
 for (const f of official.features) if (f.properties.case && !bounds.features.some(b => b.properties.case === f.properties.case))
   bounds.features.push({ type: 'Feature', properties: { case: f.properties.case, precision: '官方範圍', source: f.properties.source, url: f.properties.url, area_ha: f.properties.area_ha }, geometry: f.geometry });
+// 示意範圍：以國土測繪中心地段圖（段籍類別為區段徵收之地段）描繪，非官方公告範圍
+const sp = path.join(root, 'data/schematic.json');
+const ringHa = r => { const R = 6378137, rad = Math.PI / 180; let a = 0; for (let i = 0; i < r.length - 1; i++) { const [x1, y1] = r[i], [x2, y2] = r[i + 1]; a += (x2 - x1) * rad * (2 + Math.sin(y1 * rad) + Math.sin(y2 * rad)); } return Math.abs(a * R * R / 2) / 1e4; };
+if (fs.existsSync(sp)) for (const [id, s] of Object.entries(JSON.parse(fs.readFileSync(sp, 'utf8')))) if (!bounds.features.some(b => b.properties.case === id))
+  bounds.features.push({ type: 'Feature', properties: { case: id, precision: '示意範圍', source: '國土測繪中心地段圖（' + s.sections + '）', url: 'https://maps.nlsc.gov.tw/', area_ha: Math.round(s.rings.reduce((t, r) => t + ringHa(r), 0) * 10) / 10, caveat: s.caveat || '' }, geometry: { type: 'MultiPolygon', coordinates: s.rings.map(r => [r]) } });
 fs.writeFileSync(path.join(root, 'docs/official.js'), 'window.WAVE_OFFICIAL=' + JSON.stringify(official) + ';\n');
 // 全國已公告區段徵收案件（地政司）
 const csvLines = fs.readFileSync(path.join(root, 'data/moi_cases.csv'), 'utf8').replace(/^\ufeff/, '').trim().split('\n');
