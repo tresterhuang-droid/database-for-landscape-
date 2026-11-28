@@ -19,7 +19,7 @@
 --line:light-dark(#d9d8d3,#2c3036);--sea:light-dark(#eef2f4,#171c22);--land:light-dark(#ffffff,#1d2127);
 --card:light-dark(#f6f5f1,#1a1e23);
 --s-run:#b3261e;--s-rev:#b7791f;--s-plan:#2f5d8a;--s-done:light-dark(#6b6f76,#8d9198);--s-stop:#3f7d4e;
---s-disp:#7b3fa0;--s-lost:light-dark(#2b2d31,#c9c5bd);--s-dmg:#c2570c;--s-fix:#0f766e}
+--s-disp:#7b3fa0;--s-lost:light-dark(#2b2d31,#c9c5bd);--s-unk:light-dark(#c4c6cb,#53575e)}
 :root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
 *{box-sizing:border-box;min-width:0}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.7 "Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;overflow-x:clip}
@@ -66,7 +66,7 @@ main{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);height:ca
 .chip i{width:9px;height:9px;border-radius:50%}
 .chips.types .chip svg{width:12px;height:12px}
 .mk svg{display:block;overflow:visible}.mk{transition:opacity .2s}.mk.dim{opacity:.18}.mk.on svg *{stroke:var(--ink);stroke-width:3}
-.legend .lg{display:grid;grid-template-columns:14px 1fr;gap:0 6px;align-items:center}.legend hr{border:0;border-top:1px solid var(--line);margin:4px 0}
+.legend .lg{display:grid;grid-template-columns:14px 1fr;gap:0 6px;align-items:center}.legend hr{border:0;border-top:1px solid var(--line);margin:4px 0}.legend .lh{display:block;font-size:12px;color:var(--mute);font-weight:500}
 .list .tp{font-size:12px;color:var(--mute);border:1px solid var(--line);border-radius:4px;padding:0 5px;margin-right:6px;font-weight:400}
 .types-intro{margin:10px 0 0;padding:0;list-style:none;font-size:15px}.types-intro li{display:grid;grid-template-columns:18px 1fr;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)}.types-intro svg{width:14px;height:14px;margin-top:5px}
 .more{display:inline-block;margin-top:10px;font-weight:500}
@@ -159,16 +159,16 @@ main{grid-template-columns:1fr;height:auto}
 <script src="config.js"></script>
 <script>
 {
+// 狀態：五類案件共用同一組定義，顏色只表示狀態
 const STATUS = [
-  {k:'執行中', c:'var(--s-run)', d:'已公告徵收，拆遷、工程或配地進行中'},
-  {k:'審議中', c:'var(--s-rev)', d:'都市計畫或徵收計畫審議中'},
-  {k:'規劃中', c:'var(--s-plan)', d:'政策已提出，尚在規劃或公聽階段'},
-  {k:'完成',   c:'var(--s-done)', d:'區段徵收與配地已完成'},
-  {k:'中止',   c:'var(--s-stop)', d:'遭駁回或撤案'}
-  ,{k:'爭議中', c:'var(--s-disp)', d:'程序、訴訟或保存爭議進行中，結果未定'},
-  {k:'已滅失', c:'var(--s-lost)', d:'建物已拆除或燒毀至無法回復'},
-  {k:'受損', c:'var(--s-dmg)', d:'火災或破壞後受損，修復情形未定或待補'},
-  {k:'已修復', c:'var(--s-fix)', d:'受損後已完成修復或重建'}
+  {k:'規劃中', c:'var(--s-plan)', d:'已提出構想或提報，尚未進入法定審議'},
+  {k:'審議中', c:'var(--s-rev)',  d:'在法定審議程序中：都市計畫、土地徵收、都市更新或文資審議'},
+  {k:'執行中', c:'var(--s-run)',  d:'已核定，徵收、重劃、拆遷、施工或修復正在進行'},
+  {k:'爭議中', c:'var(--s-disp)', d:'主要進程因訴訟、訴願、調查或抗爭懸而未決'},
+  {k:'已完成', c:'var(--s-done)', d:'開發、配地或修復已完成'},
+  {k:'已滅失', c:'var(--s-lost)', d:'建物或聚落已拆除、燒毀，無法回復'},
+  {k:'中止',   c:'var(--s-stop)', d:'撤案、駁回或終止'},
+  {k:'待查',   c:'var(--s-unk)',  d:'事件後的現況尚未查證'}
 ];
 const TYPES = [
   {k:'區段徵收', shape:'circle', d:'政府徵收整區土地，規劃後發還部分抵價地'},
@@ -187,7 +187,7 @@ const shapeSVG = (shape, fill, size, stroke = '#fff') => {
   return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-hidden="true"><g fill="${fill}" stroke="${stroke}" stroke-width="${w}">${body}</g></svg>`;
 };
 const typeOf = c => TYPES.find(x => x.k === (c.type || '區段徵收')) || TYPES[0];
-const col = s => (STATUS.find(x => x.k === s) || STATUS[3]).c;
+const col = s => (STATUS.find(x => x.k === s) || STATUS[STATUS.length - 1]).c;
 const probe = document.createElement('i'); probe.style.display = 'none'; document.body.appendChild(probe);
 const rc = v => { probe.style.color = v; return getComputedStyle(probe).color; };
 const esc = v => String(v ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
@@ -221,7 +221,7 @@ async function loadSheet() {
     const cs = parseCSV(a).filter(c => c.id && c.lat && c.lng).map(c => ({...c, lat:+c.lat, lng:+c.lng, area: c.area ? +c.area : null,
       sources: (c.sources || '').split('\n').map(l => { const p = l.split('|'); return {t: p[0].trim(), u: (p[1] || '').trim()}; }).filter(s => s.t)}));
     const ev = parseCSV(b).filter(e => e.case && e.date);
-    if (cs.length) { CASES = cs; EVENTS = ev; return true; }
+    if (cs.length) { cs.forEach(c => { c.status = ({'完成':'已完成','已修復':'已完成','受損':'待查'})[c.status] || c.status; }); CASES = cs; EVENTS = ev; return true; }
   } catch (e) {}
   return false;
 }
@@ -400,11 +400,11 @@ function renderChrome() {
   const usedS = STATUS.filter(s => n(s.k));
   document.getElementById('tally').innerHTML =
     `<div><b>${CASES.length}</b>案件</div>` + TYPES.map(s => `<div><b>${nt(s.k)}</b>${s.k}</div>`).join('');
-  document.getElementById('legend').innerHTML = TYPES.map(s => `<div class="lg">${shapeSVG(s.shape, rc('var(--mute)'), 12)}<span>${s.k}</span></div>`).join('') + '<hr>' +
-    usedS.map(s => `<div><i style="background:${s.c}"></i>${s.k}</div>`).join('');
+  document.getElementById('legend').innerHTML = '<b class="lh">狀態</b>' + usedS.map(s => `<div><i style="background:${s.c}"></i>${s.k}</div>`).join('') +
+    '<hr><b class="lh">類型</b>' + TYPES.map(s => `<div class="lg">${shapeSVG(s.shape, rc('var(--mute)'), 12)}<span>${s.k}</span></div>`).join('');
   document.getElementById('chips').innerHTML =
-    `<div class="chips types">${TYPES.map(s => `<button class="chip" data-t="${s.k}" aria-pressed="${activeT.has(s.k)}" title="${esc(s.d)}">${shapeSVG(s.shape, rc('var(--mute)'), 12)}${s.k} ${nt(s.k)}</button>`).join('')}</div>` +
-    `<div class="chips">${usedS.map(s => `<button class="chip" data-s="${s.k}" aria-pressed="${active.has(s.k)}" title="${esc(s.d)}"><i style="background:${s.c}"></i>${s.k} ${n(s.k)}</button>`).join('')}</div>`;
+    `<div class="chips">${usedS.map(s => `<button class="chip" data-s="${s.k}" aria-pressed="${active.has(s.k)}" title="${esc(s.d)}"><i style="background:${s.c}"></i>${s.k} ${n(s.k)}</button>`).join('')}</div>` +
+    `<div class="chips types">${TYPES.map(s => `<button class="chip" data-t="${s.k}" aria-pressed="${activeT.has(s.k)}" title="${esc(s.d)}">${shapeSVG(s.shape, rc('var(--mute)'), 12)}${s.k} ${nt(s.k)}</button>`).join('')}</div>`;
   document.querySelectorAll('.chip').forEach(b => b.onclick = () => {
     const [set, all] = b.dataset.t ? [activeT, TYPES] : [active, STATUS], k = b.dataset.t || b.dataset.s;
     set.has(k) ? set.delete(k) : set.add(k);
