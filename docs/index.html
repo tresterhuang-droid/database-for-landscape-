@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>區段徵收地圖｜台灣浪潮協會</title>
-<meta name="description" content="台灣浪潮協會整理的全台區段徵收案件地圖：已完成、執行中、審議中與規劃中的案件進度、爭議與時間軸。">
+<title>土地開發與文資爭議地圖｜台灣浪潮協會</title>
+<meta name="description" content="台灣浪潮協會整理的全台區段徵收、市地重劃、都市更新、古蹟燒與非正式歷史建築案件地圖：進度、爭議與時間軸，並公開收錄方法。">
 <link rel="stylesheet" href="vendor/leaflet.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap" rel="stylesheet">
@@ -18,7 +18,8 @@
 --bg:light-dark(#fdfdfb,#121417);--ink:light-dark(#16181d,#e8e6e1);--mute:light-dark(#5f636b,#a3a6ad);
 --line:light-dark(#d9d8d3,#2c3036);--sea:light-dark(#eef2f4,#171c22);--land:light-dark(#ffffff,#1d2127);
 --card:light-dark(#f6f5f1,#1a1e23);
---s-run:#b3261e;--s-rev:#b7791f;--s-plan:#2f5d8a;--s-done:light-dark(#6b6f76,#8d9198);--s-stop:#3f7d4e}
+--s-run:#b3261e;--s-rev:#b7791f;--s-plan:#2f5d8a;--s-done:light-dark(#6b6f76,#8d9198);--s-stop:#3f7d4e;
+--s-disp:#7b3fa0;--s-lost:light-dark(#2b2d31,#c9c5bd);--s-dmg:#c2570c;--s-fix:#0f766e}
 :root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
 *{box-sizing:border-box;min-width:0}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.7 "Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;overflow-x:clip}
@@ -63,6 +64,12 @@ main{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);height:ca
 .chip{border:1px solid var(--line);background:none;border-radius:999px;padding:6px 12px;font-size:14px;min-height:36px;display:inline-flex;align-items:center;gap:6px}
 .chip[aria-pressed=true]{border-color:var(--ink)}.chip[aria-pressed=false]{opacity:.45;text-decoration:line-through}
 .chip i{width:9px;height:9px;border-radius:50%}
+.chips.types .chip svg{width:12px;height:12px}
+.mk svg{display:block;overflow:visible}.mk{transition:opacity .2s}.mk.dim{opacity:.18}.mk.on svg *{stroke:var(--ink);stroke-width:3}
+.legend .lg{display:grid;grid-template-columns:14px 1fr;gap:0 6px;align-items:center}.legend hr{border:0;border-top:1px solid var(--line);margin:4px 0}
+.list .tp{font-size:12px;color:var(--mute);border:1px solid var(--line);border-radius:4px;padding:0 5px;margin-right:6px;font-weight:400}
+.types-intro{margin:10px 0 0;padding:0;list-style:none;font-size:15px}.types-intro li{display:grid;grid-template-columns:18px 1fr;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)}.types-intro svg{width:14px;height:14px;margin-top:5px}
+.more{display:inline-block;margin-top:10px;font-weight:500}
 .scrollpane{overflow-y:auto;flex:1;padding:0 20px 40px}
 .list{list-style:none;margin:0;padding:0}
 .list li button{width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);padding:14px 0;display:grid;grid-template-columns:12px 1fr auto;gap:4px 12px;align-items:baseline}
@@ -111,14 +118,14 @@ main{grid-template-columns:1fr;height:auto}
 <header>
   <div>
     <div class="brand"><a href="https://waveintaiwan.com">台灣浪潮協會 Wave in Taiwan</a>　城鄉觀測</div>
-    <h1>區段徵收地圖</h1>
-    <p class="lede">一次徵收整片土地、重劃後再發還部分給地主：這是台灣城市擴張最常用、也最具爭議的開發工具。我們把各地案件放回地圖與時間裡。</p>
+    <h1>土地開發與文資爭議地圖</h1>
+    <p class="lede">區段徵收、市地重劃、都市更新改寫土地的所有與使用；古蹟燒與未獲身分的老建築，則是同一股力量在記憶層面留下的缺口。我們把這些案件放回地圖與時間裡，並公開<a href="method.html">收錄方法</a>。</p>
   </div>
   <div class="tally" id="tally"></div>
 </header>
 
 <main>
-  <section class="map" aria-label="台灣區段徵收案件地圖">
+  <section class="map" aria-label="案件地圖">
     <div id="map"></div>
     <div class="tools">
       <button id="lyrbtn" aria-label="圖層" title="圖層">圖層</button>
@@ -131,14 +138,14 @@ main{grid-template-columns:1fr;height:auto}
   <section class="panel" aria-label="案件登記簿">
     <div class="bar">
       <input id="q" type="search" placeholder="搜尋案件、縣市或關鍵字" aria-label="搜尋案件">
-      <div class="chips" id="chips"></div>
+      <div id="chips" style="display:flex;flex-direction:column;gap:6px"></div>
     </div>
     <div class="scrollpane" id="pane"></div>
   </section>
 </main>
 
 <footer>
-  <span>資料整理：台灣浪潮協會　｜　最後更新：<span id="upd"></span></span>
+  <span>資料整理：台灣浪潮協會　｜　<a href="method.html">收錄方法</a>　｜　最後更新：<span id="upd"></span></span>
   <span>事實層依公開報導、政府文件與判決整理；「浪潮觀點」為協會評析，與事實陳述分開標示。發現錯誤或有補充資料，歡迎來信指正。</span>
 </footer>
 
@@ -158,7 +165,28 @@ const STATUS = [
   {k:'規劃中', c:'var(--s-plan)', d:'政策已提出，尚在規劃或公聽階段'},
   {k:'完成',   c:'var(--s-done)', d:'區段徵收與配地已完成'},
   {k:'中止',   c:'var(--s-stop)', d:'遭駁回或撤案'}
+  ,{k:'爭議中', c:'var(--s-disp)', d:'程序、訴訟或保存爭議進行中，結果未定'},
+  {k:'已滅失', c:'var(--s-lost)', d:'建物已拆除或燒毀至無法回復'},
+  {k:'受損', c:'var(--s-dmg)', d:'火災或破壞後受損，修復情形未定或待補'},
+  {k:'已修復', c:'var(--s-fix)', d:'受損後已完成修復或重建'}
 ];
+const TYPES = [
+  {k:'區段徵收', shape:'circle', d:'政府徵收整區土地，規劃後發還部分抵價地'},
+  {k:'市地重劃', shape:'square', d:'地主保有產權，按比例負擔公設與費用；含公辦與自辦'},
+  {k:'都市更新', shape:'diamond', d:'依《都市更新條例》重建或整建的更新事業'},
+  {k:'古蹟燒', shape:'triangle', d:'近20年具文資身分或文資潛力的建物火災'},
+  {k:'非正式歷史建築', shape:'ring', d:'具公開的文資價值主張，但未獲或失去法定身分'}
+];
+const shapeSVG = (shape, fill, size, stroke = '#fff') => {
+  const h = size / 2, w = 1.5;
+  const body = shape === 'square' ? `<rect x="${w}" y="${w}" width="${size - 2*w}" height="${size - 2*w}" rx="1.5"/>`
+    : shape === 'diamond' ? `<polygon points="${h},${w} ${size - w},${h} ${h},${size - w} ${w},${h}"/>`
+    : shape === 'triangle' ? `<polygon points="${h},${w} ${size - w},${size - w} ${w},${size - w}"/>`
+    : shape === 'ring' ? `<circle cx="${h}" cy="${h}" r="${h - 3}" fill="none" stroke="${fill}" stroke-width="4"/><circle cx="${h}" cy="${h}" r="${h - 0.8}" fill="none" stroke="${stroke}" stroke-width="1.2"/>`
+    : `<circle cx="${h}" cy="${h}" r="${h - w}"/>`;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-hidden="true"><g fill="${fill}" stroke="${stroke}" stroke-width="${w}">${body}</g></svg>`;
+};
+const typeOf = c => TYPES.find(x => x.k === (c.type || '區段徵收')) || TYPES[0];
 const col = s => (STATUS.find(x => x.k === s) || STATUS[3]).c;
 const probe = document.createElement('i'); probe.style.display = 'none'; document.body.appendChild(probe);
 const rc = v => { probe.style.color = v; return getComputedStyle(probe).color; };
@@ -168,7 +196,7 @@ const fmtArea = a => a ? Number(a).toLocaleString('zh-TW', {maximumFractionDigit
 
 let CASES = window.WAVE_CASES || [], EVENTS = window.WAVE_EVENTS || [];
 const cfg = window.WAVE_CONFIG || {};
-let active = new Set(STATUS.map(s => s.k)), query = '', current = null;
+let active = new Set(STATUS.map(s => s.k)), activeT = new Set(TYPES.map(s => s.k)), query = '', current = null;
 
 /* ---------- CSV（Google 試算表後台） ---------- */
 function parseCSV(text) {
@@ -332,8 +360,11 @@ function drawDots() {
   dotLayer.clearLayers(); markers = {};
   boundLayer.clearLayers(); boundLayer.addData(BOUNDS);
   [...CASES].sort((a, b) => radius(b.area) - radius(a.area)).forEach(c => {
-    const m = L.circleMarker([c.lat, c.lng], {pane:'dots', radius: radius(c.area), color:'#fff', weight:1.5, fillColor: rc(col(c.status)), fillOpacity:.85})
-      .bindTooltip(`${c.name}（${c.status}）`, {direction:'top', offset:[0, -4]})
+    const ty = typeOf(c), tip = `${c.name}（${ty.k}｜${c.status}）`;
+    const m = (ty.shape === 'circle'
+      ? L.circleMarker([c.lat, c.lng], {pane:'dots', radius: radius(c.area), color:'#fff', weight:1.5, fillColor: rc(col(c.status)), fillOpacity:.85})
+      : L.marker([c.lat, c.lng], {pane:'dots', keyboard:false, icon: L.divIcon({className:'mk', html: shapeSVG(ty.shape, rc(col(c.status)), 18), iconSize:[18, 18], iconAnchor:[9, 9]})}))
+      .bindTooltip(tip, {direction:'top', offset:[0, -6]})
       .on('click', () => go(c.id));
     m.addTo(dotLayer); markers[c.id] = m;
   });
@@ -343,8 +374,8 @@ function styleDots() {
   const vis = new Set(filtered().map(c => c.id));
   for (const [id, m] of Object.entries(markers)) {
     const on = id === current, show = vis.has(id);
-    m.setStyle({fillOpacity: show ? .85 : .12, opacity: show ? 1 : .3, color: on ? rc('var(--ink)') : '#fff', weight: on ? 3 : 1.5});
-    if (on) m.bringToFront();
+    if (m.setStyle) { m.setStyle({fillOpacity: show ? .85 : .12, opacity: show ? 1 : .3, color: on ? rc('var(--ink)') : '#fff', weight: on ? 3 : 1.5}); if (on) m.bringToFront(); }
+    else { const el = m.getElement(); if (el) { el.classList.toggle('dim', !show); el.classList.toggle('on', on); } m.setZIndexOffset(on ? 1000 : 0); }
   }
 }
 function zoomTo(c) {
@@ -362,18 +393,22 @@ if (![...layerOn].some(id => LAYERS.find(d => d.id === id).kind === 'base')) set
 /* ---------- 篩選與列表 ---------- */
 function filtered() {
   const q = query.toLowerCase();
-  return CASES.filter(c => active.has(c.status) && (!q || [c.name, c.county, c.summary, c.agency, c.controversy].join(' ').toLowerCase().includes(q)));
+  return CASES.filter(c => active.has(c.status) && activeT.has(typeOf(c).k) && (!q || [c.name, c.county, c.summary, c.agency, c.controversy, c.type, c.legal].join(' ').toLowerCase().includes(q)));
 }
 function renderChrome() {
-  const n = s => CASES.filter(c => c.status === s).length;
+  const n = s => CASES.filter(c => c.status === s).length, nt = k => CASES.filter(c => typeOf(c).k === k).length;
+  const usedS = STATUS.filter(s => n(s.k));
   document.getElementById('tally').innerHTML =
-    `<div><b>${CASES.length}</b>案件</div>` + ['執行中','審議中','規劃中'].map(s => `<div><b>${n(s)}</b>${s}</div>`).join('');
-  document.getElementById('legend').innerHTML = STATUS.map(s => `<div><i style="background:${s.c}"></i>${s.k}</div>`).join('');
-  document.getElementById('chips').innerHTML = STATUS.map(s =>
-    `<button class="chip" data-s="${s.k}" aria-pressed="${active.has(s.k)}" title="${esc(s.d)}"><i style="background:${s.c}"></i>${s.k} ${n(s.k)}</button>`).join('');
+    `<div><b>${CASES.length}</b>案件</div>` + TYPES.map(s => `<div><b>${nt(s.k)}</b>${s.k}</div>`).join('');
+  document.getElementById('legend').innerHTML = TYPES.map(s => `<div class="lg">${shapeSVG(s.shape, rc('var(--mute)'), 12)}<span>${s.k}</span></div>`).join('') + '<hr>' +
+    usedS.map(s => `<div><i style="background:${s.c}"></i>${s.k}</div>`).join('');
+  document.getElementById('chips').innerHTML =
+    `<div class="chips types">${TYPES.map(s => `<button class="chip" data-t="${s.k}" aria-pressed="${activeT.has(s.k)}" title="${esc(s.d)}">${shapeSVG(s.shape, rc('var(--mute)'), 12)}${s.k} ${nt(s.k)}</button>`).join('')}</div>` +
+    `<div class="chips">${usedS.map(s => `<button class="chip" data-s="${s.k}" aria-pressed="${active.has(s.k)}" title="${esc(s.d)}"><i style="background:${s.c}"></i>${s.k} ${n(s.k)}</button>`).join('')}</div>`;
   document.querySelectorAll('.chip').forEach(b => b.onclick = () => {
-    const s = b.dataset.s; active.has(s) ? active.delete(s) : active.add(s);
-    if (!active.size) STATUS.forEach(x => active.add(x.k));
+    const [set, all] = b.dataset.t ? [activeT, TYPES] : [active, STATUS], k = b.dataset.t || b.dataset.s;
+    set.has(k) ? set.delete(k) : set.add(k);
+    if (!set.size) all.forEach(x => set.add(x.k));
     renderChrome(); styleDots(); if (!current) renderHome();
   });
   document.getElementById('upd').textContent = cfg.updated || '';
@@ -383,20 +418,24 @@ function listHTML() {
   const rows = filtered().sort((a, b) => order(a.status) - order(b.status) || b.lat - a.lat);
   if (!rows.length) return '<p class="empty">沒有符合條件的案件。</p>';
   return '<ul class="list">' + rows.map(c => `<li><button data-id="${esc(c.id)}">
-    <span class="sw" style="background:${col(c.status)}"></span><span class="nm">${esc(c.name)}</span><span class="st">${esc(c.status)}</span>
-    <span class="meta">${esc(c.county)}　${esc(fmtArea(c.area))}　${esc(c.period)}</span></button></li>`).join('') + '</ul>';
+    <span class="sw" style="background:${col(c.status)}"></span><span class="nm"><span class="tp">${esc(typeOf(c).k)}</span>${esc(c.name)}</span><span class="st">${esc(c.status)}</span>
+    <span class="meta">${esc(c.county)}${c.area ? '　' + esc(fmtArea(c.area)) : ''}　${esc(c.period)}</span></button></li>`).join('') + '</ul>';
 }
 function renderHome() {
   const pane = document.getElementById('pane');
   pane.innerHTML = `<div class="intro">
-    <h2>區段徵收是什麼</h2>
+    <h2>這張地圖收錄什麼</h2>
+    <p>五類案件各有不同的法律依據，卻反覆出現同一組問題：誰決定一塊土地或一棟建物的去留，不同意的人有沒有退路，損失由誰承擔。</p>
+    <ul class="types-intro">${TYPES.map(s => `<li>${shapeSVG(s.shape, rc('var(--mute)'), 14)}<span><b>${s.k}</b>　${esc(s.d)}</span></li>`).join('')}</ul>
+    <a class="more" href="method.html">各類案件如何被選入：收錄方法與選擇漏斗 →</a>
+    <h3 class="sec">區段徵收是什麼</h3>
     <p>政府將一定範圍內的私有土地全部徵收，重新規劃道路、公園等公共設施後，把一部分建築用地以「抵價地」發還原地主（法定原則為徵收總面積的50%，最低不得少於40%），其餘土地由政府標售、標租或設定地上權，用以支應開發成本。</p>
     <p>支持者視之為不必動用大量預算就能完成整體開發的工具；批評者則指出，它讓地方政府同時成為規劃者、徵收者與土地出售者，開發收益的誘因可能使「公益性」與「必要性」的審查流於形式。</p>
     <div class="law"><b>2011年12月</b>　大埔、相思寮事件後，立法院修正《土地徵收條例》，改採市價補償，並要求徵收前評估社會、經濟、文化生態與永續等公益性因素；民間要求的聽證制度未被納入。</div>
     <div class="law"><b>2023年6月</b>　台北高等行政法院在航空城案判決9名居民勝訴，指審議小組未實質審查公益性與必要性。</div>
     <div class="law"><b>2026年5月</b>　航空城被徵收居民聲請憲法審查，挑戰區段徵收、先行區段徵收與土地、改良物分開徵收等規定。</div>
     ${moiHTML()}
-    <h3 class="sec">案件登記簿</h3></div>` + listHTML();
+    <h3 class="sec">案件登記簿</h3><p class="lyrnote">市地重劃、都市更新、古蹟燒與非正式歷史建築為第一批收錄，選擇標準與缺漏見<a href="method.html">收錄方法</a>。</p></div>` + listHTML();
   bindList();
 }
 function moiHTML() {
@@ -422,11 +461,13 @@ function renderCase(c) {
     <h2>${esc(c.name)}</h2>
     <span class="badge" style="background:${col(c.status)}">${esc(c.status)}</span>
     <dl class="facts">
+      <dt>類型</dt><dd>${esc(typeOf(c).k)}</dd>
       <dt>縣市</dt><dd>${esc(c.county)}</dd>
-      <dt>面積</dt><dd>${esc(fmtArea(c.area))}${c.area_note ? '<br><span style="color:var(--mute);font-size:14px">' + esc(c.area_note) + '</span>' : ''}</dd>
-      <dt>主辦</dt><dd>${esc(c.agency || '—')}</dd>
+      ${c.legal ? `<dt>文資身分</dt><dd>${esc(c.legal)}</dd>` : ''}
+      ${c.area || c.area_note || typeOf(c).k === '區段徵收' ? `<dt>面積</dt><dd>${esc(fmtArea(c.area))}${c.area_note ? '<br><span style="color:var(--mute);font-size:14px">' + esc(c.area_note) + '</span>' : ''}</dd>` : ''}
+      <dt>${/古蹟燒|非正式/.test(typeOf(c).k) ? '權屬／主管' : '主辦'}</dt><dd>${esc(c.agency || '—')}</dd>
       <dt>期間</dt><dd>${esc(c.period || '—')}</dd>
-      <dt>範圍</dt><dd>${(b => b ? (b.properties.precision === '示意範圍' ? `<strong>示意範圍</strong>：依<a href="${esc(safeUrl(b.properties.url))}" target="_blank" rel="noopener">${esc(b.properties.source)}</a>之段界描繪，圖面約 ${esc(fmtArea(b.properties.area_ha))}${c.area ? '，公告面積 ' + esc(fmtArea(c.area)) : ''}。非官方公告範圍，僅供理解區位與規模。${b.properties.caveat ? '<br><span style="color:var(--mute);font-size:14px">' + esc(b.properties.caveat) + '</span>' : ''}` : `${esc(b.properties.precision)}：<a href="${esc(safeUrl(b.properties.url))}" target="_blank" rel="noopener">${esc(b.properties.source)}</a>${b.properties.area_ha ? '（圖面計算約 ' + esc(fmtArea(b.properties.area_ha)) + '）' : ''}${b.properties.caveat ? '<br><span style="color:var(--mute);font-size:14px">' + esc(b.properties.caveat) + '</span>' : ''}`) : '<span style="color:var(--mute)">官方範圍圖資待補，地圖以點位示意</span>')(boundOf(c.id))}</dd>
+      <dt>範圍</dt><dd>${(b => b ? (b.properties.precision === '示意範圍' ? `<strong>示意範圍</strong>：依<a href="${esc(safeUrl(b.properties.url))}" target="_blank" rel="noopener">${esc(b.properties.source)}</a>之段界描繪，圖面約 ${esc(fmtArea(b.properties.area_ha))}${c.area ? '，公告面積 ' + esc(fmtArea(c.area)) : ''}。非官方公告範圍，僅供理解區位與規模。${b.properties.caveat ? '<br><span style="color:var(--mute);font-size:14px">' + esc(b.properties.caveat) + '</span>' : ''}` : `${esc(b.properties.precision)}：<a href="${esc(safeUrl(b.properties.url))}" target="_blank" rel="noopener">${esc(b.properties.source)}</a>${b.properties.area_ha ? '（圖面計算約 ' + esc(fmtArea(b.properties.area_ha)) + '）' : ''}${b.properties.caveat ? '<br><span style="color:var(--mute);font-size:14px">' + esc(b.properties.caveat) + '</span>' : ''}`) : (/古蹟燒|非正式/.test(typeOf(c).k) ? '<span style="color:var(--mute)">單棟或建築群，地圖以點位標示大致位置</span>' : '<span style="color:var(--mute)">官方範圍圖資待補，地圖以點位示意</span>'))(boundOf(c.id))}</dd>
     </dl>
     <div class="cmp" aria-label="在地圖上比對">
       <span>在地圖上比對</span>

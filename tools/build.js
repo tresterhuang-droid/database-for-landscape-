@@ -48,7 +48,7 @@ fs.writeFileSync(path.join(root, 'docs/bounds.js'), '/* 徵收範圍：由 tools
 
 // CSV
 const esc = v => { v = v == null ? '' : String(v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
-const caseCols = ['id', 'name', 'county', 'lat', 'lng', 'status', 'area', 'area_note', 'agency', 'period', 'summary', 'controversy', 'wave_view', 'sources'];
+const caseCols = ['id', 'type', 'name', 'county', 'lat', 'lng', 'status', 'area', 'area_note', 'agency', 'period', 'summary', 'controversy', 'wave_view', 'legal', 'sources'];
 const caseRows = cases.map(c => caseCols.map(k => k === 'sources' ? c.sources.map(s => s.t + ' | ' + s.u).join('\n') : c[k]).map(esc).join(','));
 fs.mkdirSync(path.join(root, 'sheet'), { recursive: true });
 fs.writeFileSync(path.join(root, 'sheet/cases.csv'), '﻿' + [caseCols.join(','), ...caseRows].join('\n'));
