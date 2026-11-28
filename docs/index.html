@@ -69,6 +69,7 @@ main{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);height:ca
 .legend .lg{display:grid;grid-template-columns:14px 1fr;gap:0 6px;align-items:center}.legend hr{border:0;border-top:1px solid var(--line);margin:4px 0}.legend .lh{display:block;font-size:12px;color:var(--mute);font-weight:500}
 .list .tp{font-size:12px;color:var(--mute);border:1px solid var(--line);border-radius:4px;padding:0 5px;margin-right:6px;font-weight:400}
 .types-intro{margin:10px 0 0;padding:0;list-style:none;font-size:15px}.types-intro li{display:grid;grid-template-columns:18px 1fr;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)}.types-intro svg{width:14px;height:14px;margin-top:5px}
+.cite{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:10px 12px;font-size:14px;user-select:all}.fix{font-size:14px}
 .more{display:inline-block;margin-top:10px;font-weight:500}
 .scrollpane{overflow-y:auto;flex:1;padding:0 20px 40px}
 .list{list-style:none;margin:0;padding:0}
@@ -145,7 +146,7 @@ main{grid-template-columns:1fr;height:auto}
 </main>
 
 <footer>
-  <span>資料整理：台灣浪潮協會　｜　<a href="method.html">收錄方法</a>　｜　最後更新：<span id="upd"></span></span>
+  <span>資料整理：台灣浪潮協會　｜　<a href="method.html">收錄方法</a>　｜　<a href="data.html">資料下載與引用</a>　｜　最後更新：<span id="upd"></span></span>
   <span>事實層依公開報導、政府文件與判決整理；「浪潮觀點」為協會評析，與事實陳述分開標示。發現錯誤或有補充資料，歡迎來信指正。</span>
 </footer>
 
@@ -453,6 +454,11 @@ function moiHTML() {
 function bindList() { document.querySelectorAll('.list button').forEach(b => b.onclick = () => go(b.dataset.id)); }
 
 /* ---------- 案件頁 ---------- */
+const fixURL = c => {
+  const cfg = window.WAVE_CONFIG || {}, title = `［更正／補充］${c.name}`, body = `案件：${c.name}（${location.origin + location.pathname}#${c.id}）\n\n需要更正或補充的內容：\n\n可查證的來源：\n`;
+  return cfg.contactEmail ? `mailto:${cfg.contactEmail}?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`
+    : `https://github.com/tresterhuang-droid/database-for-landscape-/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
+};
 function renderCase(c) {
   const ev = EVENTS.filter(e => e.case === c.id).sort((a, b) => String(a.date).localeCompare(String(b.date)));
   const pane = document.getElementById('pane');
@@ -482,6 +488,9 @@ function renderCase(c) {
     ${c.wave_view ? `<h3 class="sec">浪潮觀點</h3><div class="view"><small>協會評析，非事實陳述</small><p>${esc(c.wave_view)}</p></div>` : ''}
     <h3 class="sec">資料來源</h3>
     <ol class="src">${(c.sources || []).map(s => `<li><a href="${esc(safeUrl(s.u))}" target="_blank" rel="noopener">${esc(s.t)}</a></li>`).join('')}</ol>
+    <h3 class="sec">引用與更正</h3>
+    <p class="cite">台灣浪潮協會。〈${esc(c.name)}〉，土地開發與文資爭議地圖。${esc(location.origin + location.pathname)}#${esc(c.id)}。查閱日期 ${new Date().toISOString().slice(0, 10)}。</p>
+    <p class="fix"><a href="${esc(fixURL(c))}" target="_blank" rel="noopener">回報本案錯誤或補充資料</a>　｜　<a href="data.html">下載全部資料</a></p>
   </article>`;
   document.getElementById('back').onclick = () => { location.hash = ''; };
   pane.querySelectorAll('.cmp button').forEach(b => {

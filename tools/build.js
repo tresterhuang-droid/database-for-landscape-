@@ -54,4 +54,14 @@ fs.mkdirSync(path.join(root, 'sheet'), { recursive: true });
 fs.writeFileSync(path.join(root, 'sheet/cases.csv'), '﻿' + [caseCols.join(','), ...caseRows].join('\n'));
 const evCols = ['case', 'date', 'type', 'title', 'url'];
 fs.writeFileSync(path.join(root, 'sheet/events.csv'), '﻿' + [evCols.join(','), ...events.map(e => evCols.map(k => esc(e[k])).join(','))].join('\n'));
+// 下載檔與更新紀錄
+const dl = path.join(root, 'docs/download'); fs.mkdirSync(dl, { recursive: true });
+fs.copyFileSync(path.join(root, 'sheet/cases.csv'), path.join(dl, 'cases.csv'));
+fs.copyFileSync(path.join(root, 'sheet/events.csv'), path.join(dl, 'events.csv'));
+fs.writeFileSync(path.join(dl, 'cases.geojson'), JSON.stringify({ type: 'FeatureCollection', features: cases.map(c => ({ type: 'Feature', properties: Object.fromEntries(Object.entries(c).filter(([k]) => !['lat', 'lng'].includes(k)).map(([k, v]) => [k, k === 'sources' ? v.map(s => s.t + ' | ' + s.u).join('\n') : v])), geometry: { type: 'Point', coordinates: [c.lng, c.lat] } })) }));
+fs.writeFileSync(path.join(dl, 'boundaries.geojson'), JSON.stringify(bounds));
+fs.writeFileSync(path.join(dl, 'official.geojson'), JSON.stringify(official));
+let log = [];
+try { log = require('child_process').execSync('git log --date=short --pretty=%ad%x09%h%x09%s', { cwd: root }).toString().trim().split('\n').map(l => l.split('\t')).filter(([, , s]) => s && !/^Initial commit|^同步/.test(s)).map(([d, h, s]) => ({ d, h, s })); } catch (e) {}
+fs.writeFileSync(path.join(root, 'docs/changelog.js'), '/* 由 tools/build.js 依 git 紀錄產生 */\nwindow.WAVE_LOG = ' + JSON.stringify(log) + ';\n');
 console.log(cases.length, 'cases,', bounds.features.length, 'boundaries,', official.features.length, 'official,', moi.length, 'moi,', events.length, 'events,');
