@@ -757,7 +757,7 @@
  },
  {
   "case": "fire-zhengzhou",
-  "date": "2016-11-08",
+  "date": "2016-10-08",
   "type": "衝突",
   "title": "火災",
   "url": ""
@@ -827,14 +827,14 @@
  },
  {
   "case": "fire-nanguo",
-  "date": "（年份待核）",
+  "date": "2019-01-04",
   "type": "衝突",
   "title": "兩棟閒置官舍火災",
   "url": ""
  },
  {
   "case": "fire-madou-xie",
-  "date": "2019",
+  "date": "2019-01-01",
   "type": "衝突",
   "title": "火災，正廳與廂房受損",
   "url": ""
@@ -886,6 +886,111 @@
   "date": "2025-06-20",
   "type": "程序",
   "title": "公民團體提起訴願",
+  "url": ""
+ },
+ {
+  "case": "fire-dasyueshan",
+  "date": "2006",
+  "type": "衝突",
+  "title": "火災",
+  "url": ""
+ },
+ {
+  "case": "fire-tainan-agri",
+  "date": "2006",
+  "type": "衝突",
+  "title": "火災",
+  "url": ""
+ },
+ {
+  "case": "fire-jingyuan",
+  "date": "2007",
+  "type": "衝突",
+  "title": "火災，房舍全毀",
+  "url": ""
+ },
+ {
+  "case": "fire-xiucaicuo",
+  "date": "2004",
+  "type": "程序",
+  "title": "開始協商認列古蹟",
+  "url": ""
+ },
+ {
+  "case": "fire-xiucaicuo",
+  "date": "2008",
+  "type": "衝突",
+  "title": "遭縱火",
+  "url": ""
+ },
+ {
+  "case": "fire-xiucaicuo",
+  "date": "2009",
+  "type": "程序",
+  "title": "拆除",
+  "url": ""
+ },
+ {
+  "case": "fire-fengshan-longshan",
+  "date": "2012",
+  "type": "衝突",
+  "title": "火災",
+  "url": ""
+ },
+ {
+  "case": "fire-lukang-fengshan",
+  "date": "2016-08-24",
+  "type": "衝突",
+  "title": "火災",
+  "url": ""
+ },
+ {
+  "case": "fire-changhua-guandi",
+  "date": "2017-02-08",
+  "type": "衝突",
+  "title": "火災",
+  "url": ""
+ },
+ {
+  "case": "fire-zhengzhou",
+  "date": "2011",
+  "type": "衝突",
+  "title": "火災",
+  "url": ""
+ },
+ {
+  "case": "fire-huaguang",
+  "date": "2016-09-25",
+  "type": "衝突",
+  "title": "南官舍四間日式平房全毀",
+  "url": ""
+ },
+ {
+  "case": "wucuo",
+  "date": "2022-09-29",
+  "type": "程序",
+  "title": "市府核准實施市地重劃",
+  "url": ""
+ },
+ {
+  "case": "wucuo",
+  "date": "2023-03-21",
+  "type": "程序",
+  "title": "市府要求剔除不同意者土地",
+  "url": ""
+ },
+ {
+  "case": "wucuo",
+  "date": "2023-04-21",
+  "type": "程序",
+  "title": "市府廢止核准處分",
+  "url": ""
+ },
+ {
+  "case": "yonghe-zhulin",
+  "date": "2023",
+  "type": "程序",
+  "title": "權利變換計畫核定",
   "url": ""
  }
 ]

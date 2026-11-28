@@ -41,7 +41,7 @@ dl.f dt{color:var(--mute);font-weight:500}dl.f dd{margin:0}
 table{width:100%;border-collapse:collapse;font-size:15px;margin:10px 0 6px}
 th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
 td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
-td.gap{color:var(--mute)}
+td.gap{color:var(--mute)}td.nw,#fireTable th{white-space:nowrap}
 .scroll{overflow-x:auto}
 ul.gaps{padding-left:1.2em}ul.gaps li{margin-bottom:10px}
 .back{display:inline-block;margin-top:14px;font-size:15px}
@@ -61,6 +61,7 @@ footer{padding:16px max(4vw,18px);border-top:1px solid var(--line);font-size:13p
       <li><a href="#why">為什麼把五類放在同一張地圖</a></li>
       <li><a href="#common">共同的選擇漏斗</a></li>
       <li><a href="#types">各類型的母體、門檻與排除</a></li>
+      <li><a href="#fires">古蹟燒母體盤點</a></li>
       <li><a href="#precision">點位、範圍與資料精度</a></li>
       <li><a href="#coverage">目前的收錄數量與縣市覆蓋</a></li>
       <li><a href="#gaps">未盡事項</a></li>
@@ -121,8 +122,11 @@ footer{padding:16px max(4vw,18px);border-top:1px solid var(--line);font-size:13p
       <dt>母體</dt><dd>維基百科「臺灣文化資產火災列表」作為索引，再逐案回到新聞、消防局或文化主管機關資料查證；並參考文化部歷年統計。</dd>
       <dt>時間範圍</dt><dd>2006年至今（近20年）。</dd>
       <dt>收錄門檻</dt><dd>火災時具法定文資身分（古蹟、歷史建築、紀念建築、聚落建築群、文化景觀），或已列冊追蹤、提報審議、具公開文資價值主張的建物；且火災造成主體受損。重複起火、與拆遷或開發同時發生、或暴露管理缺口的案件優先。</dd>
+      <dt>分類</dt><dd>母體每一筆依火災時的身分分為四類：<b>A</b> 法定文化資產；<b>B</b> 列冊追蹤、審議中或協商認列中；<b>C</b> 公有或國營事業產權的老建物，列表未記載身分；<b>D</b> 寺廟、市場、私宅等，列表未記載身分。</dd>
+      <dt>上圖規則</dt><dd>A、B 兩類全部上圖（位置無法確認者除外，並在盤點表註明）。C、D 兩類保留在盤點表，只挑選能說明「沒有身分就沒有保護」的案例上圖，例如鄭州路台鐵宿舍、南郭郡守官舍群。</dd>
       <dt>不收錄</dt><dd>僅附屬設施輕微受損、當日即撲滅且無後續保存影響的小型火警。</dd>
     </dl>
+    <p><a href="#fires">看完整的古蹟燒母體盤點表 →</a></p>
   </section>
 
   <section class="type" id="t-inf">
@@ -135,6 +139,12 @@ footer{padding:16px max(4vw,18px);border-top:1px solid var(--line);font-size:13p
       <dt>不收錄</dt><dd>單純屋齡老、但沒有任何公開價值主張或保存行動的建物。</dd>
     </dl>
   </section>
+
+  <h2 id="fires">古蹟燒母體盤點（2006 年起）</h2>
+  <p>為了讓「哪些火災被放上地圖、哪些沒有」可以被檢查，這裡公開完整的盤點表。2006至2020年依維基百科「臺灣文化資產火災列表」逐筆建立；該列表2020年後未再更新，2021年以後的案件由本站另行查證補入，目前只有少數幾筆，是已知的缺口。</p>
+  <ol class="funnel" id="fireFunnel"></ol>
+  <p class="note">同一建物多次起火時分列多筆，例如虎尾台糖宿舍、華光社區、鄭州路台鐵宿舍，因此筆數大於建物數。「火災時身分」照錄列表內容；列表未記載不代表確實沒有身分，部分寺廟可能具古蹟身分而列表漏記，這類情形會在逐案查證時更正。</p>
+  <div class="scroll"><table id="fireTable"><caption class="note" style="text-align:left">古蹟燒母體盤點表（可下載：<a href="download/fire_inventory.tsv">fire_inventory.tsv</a>）</caption></table></div>
 
   <h2 id="precision">點位、範圍與資料精度</h2>
   <p>地圖上的<b>顏色只表示狀態</b>，五類案件共用同一組定義；<b>形狀表示類型</b>：圓點為區段徵收，方塊為市地重劃，菱形為都市更新，三角為古蹟燒，空心環為非正式歷史建築。區段徵收的圓點大小對應面積；其他類型面積差異太大或不適用，以固定大小呈現。</p>
@@ -164,7 +174,8 @@ footer{padding:16px max(4vw,18px);border-top:1px solid var(--line);font-size:13p
   <h2 id="gaps">未盡事項</h2>
   <ul class="gaps">
     <li><b>縣市覆蓋不均。</b>新類型的第一批案件集中在台北與台中，東部、離島與多數縣的市地重劃、都市更新、非正式歷史建築尚未收錄。這反映的是媒體與文史團體注意力的分布，也反映本站的查證能力，不是各地案件多寡的比較。</li>
-    <li><b>古蹟燒尚未完整盤點近20年。</b>第一批11案是依代表性挑選，尚未逐筆比對火災列表與文化部統計。下一步是建立2006年以來的完整清單，再依門檻篩選。</li>
+    <li><b>古蹟燒的盤點在2021年後有缺口。</b>2006至2020年已依火災列表逐筆建立母體並分類；2021年以後列表未更新，本站只補入已查證的少數案件。下一步是比對文化部文資局年報與各縣市消防局資料，補齊近五年。</li>
+    <li><b>C、D 類火災未逐案查證身分。</b>列表記載「未記載」的寺廟與老宅中，可能有具古蹟身分者被漏記，若查證後屬 A 類，會補上地圖。</li>
     <li><b>多筆火災案件狀態為「待查」。</b>火災事實已查證，但火災後是否修復尚未逐案確認，地圖上以淺灰色標示。</li>
     <li><b>部分事實待核。</b>彰化南郭郡守官舍群火災的年份、拓殖株式會社穀倉的拆除年份、台中刑務所官舍群與陽明山美軍宿舍的修復情形，案件頁已標「待核」或「待補」。</li>
     <li><b>市地重劃與都市更新缺少全國母體。</b>自辦重劃的爭議多散落在判決系統；都更爭議以台北最多報導，新北、高雄等地的案件需要逐一從判決與地方新聞補齊。</li>
@@ -178,6 +189,7 @@ footer{padding:16px max(4vw,18px);border-top:1px solid var(--line);font-size:13p
 </main>
 <footer>資料整理：台灣浪潮協會。事實層依公開報導、政府文件與判決整理；發現錯誤或有補充資料，歡迎來信指正。</footer>
 <script src="data.js"></script>
+<script src="fire_inventory.js"></script>
 <script>
 (() => {
   const C = window.WAVE_CASES || [];
@@ -189,6 +201,18 @@ footer{padding:16px max(4vw,18px);border-top:1px solid var(--line);font-size:13p
   const rows = K.map(k => `<tr><td>${k}</td>${T.map(t => { const v = n(k, t); return `<td class="n${v ? '' : ' gap'}">${v || ''}</td>`; }).join('')}</tr>`).join('');
   const tot = `<tr><th>合計</th>${T.map(t => `<th class="n">${C.filter(c => (c.type || '區段徵收') === t).length}</th>`).join('')}</tr>`;
   document.getElementById('cov').insertAdjacentHTML('beforeend', head + '<tbody>' + rows + tot + '</tbody>');
+  const F = window.WAVE_FIRES || [], esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const cnt = k => F.filter(r => r.cls === k).length, mapped = F.filter(r => r.case).length, ab = cnt('A') + cnt('B');
+  const ids = new Set(F.filter(r => r.case).map(r => r.case));
+  document.getElementById('fireFunnel').innerHTML = [
+    ['母體', `${F.length} 筆火災紀錄（2006年起）`, '維基百科火災列表2006至2020年全部條目，加上本站查證補入的2021年後案件。'],
+    ['依身分分類', `A 法定文資 ${cnt('A')}　B 列冊或審議中 ${cnt('B')}　C 公有老建物 ${cnt('C')}　D 寺廟、市場、私宅 ${cnt('D')}`, '依火災時的身分分類，照錄列表內容。'],
+    ['門檻：A、B 類', `${ab} 筆`, '具法定身分或已進入保存程序者全部納入，位置無法確認者在表中註明。'],
+    ['加入對照案例', `另選 ${F.filter(r => r.case && (r.cls === 'C' || r.cls === 'D')).length} 筆 C、D 類`, '用來說明未具身分的老建物在火災前後缺乏保護的情形。'],
+    ['上圖', `${mapped} 筆紀錄，合併為 ${ids.size} 個地圖案件`, '同一地點多次火災合併為一個案件，時間軸列出每次起火。']
+  ].map(([a, b, c]) => `<li><b>${a}</b>　${b}<small>${c}</small></li>`).join('');
+  document.getElementById('fireTable').insertAdjacentHTML('beforeend', '<thead><tr><th>日期</th><th>名稱</th><th>縣市</th><th>火災時身分</th><th>分類</th><th>上圖</th></tr></thead><tbody>' +
+    F.map(r => `<tr><td class="nw">${esc(r.date)}</td><td>${esc(r.name)}${r.note ? `<br><small class="note">${esc(r.note)}</small>` : ''}</td><td class="nw">${esc(r.county)}</td><td>${esc(r.legal)}</td><td class="nw">${esc(r.cls)}</td><td class="nw">${r.case ? `<a href="./#${esc(r.case)}">看案件</a>` : ''}</td></tr>`).join('') + '</tbody>');
 })();
 </script>
 </body>
